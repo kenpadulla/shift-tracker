@@ -33,6 +33,9 @@ button {
 .btn-danger  { background: #c0392b; color: #fff; }
 .btn-success { background: #27ae60; color: #fff; }
 .btn-light   { background: #ecf0f1; color: #333; border: 1px solid #ccc; }
+.icon-btn { background: none; border: 1px solid transparent; border-radius: 5px; cursor: pointer; padding: 3px 6px; font-size: 15px; line-height: 1; transition: background .15s, border-color .15s; }
+.icon-btn:hover { background: #e8eef5; border-color: #b0bec5; }
+.icon-btn.icon-btn-danger:hover { background: #fdecea; border-color: #e57373; }
 
 /* RESOURCE MANAGEMENT (modal tabs) */
 .resource-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
@@ -1484,8 +1487,8 @@ function renderShiftConfigList() {
         <span style="color:#555;margin-left:8px">⏰ ${cfgNative}</span>
         ${cfgConverted && cfgConverted !== cfgNative ? `<span style="color:#2980b9;margin-left:6px;font-size:11px">→ ${cfgConverted}</span>` : ''}
       </div>
-      <button class="btn-light" style="padding:3px 8px;font-size:11px" onclick="editShiftConfig(${i})">Edit</button>
-      <button class="btn-danger" style="padding:3px 8px;font-size:11px" onclick="removeShiftConfig(${i})">✕</button>
+      <button title="Edit" class="icon-btn" style="color:#1a3c5e" onclick="editShiftConfig(${i})">✏️</button>
+      <button title="Remove" class="icon-btn icon-btn-danger" style="color:#c0392b;font-size:13px" onclick="removeShiftConfig(${i})">✕</button>
     `;
     el.appendChild(row);
   });
@@ -1516,8 +1519,8 @@ function renderResourceList() {
       <td style="padding:7px 10px;border:1px solid #dde">${offLabel(res)}</td>
       <td style="padding:7px 10px;border:1px solid #dde;color:#555">${res.location || '—'}</td>
       <td style="padding:7px 10px;border:1px solid #dde;text-align:center">
-        <button class="btn-light" style="padding:3px 8px;font-size:11px;margin-right:4px" onclick="openEditModal(${i})">Edit</button>
-        <button class="btn-danger" style="padding:3px 8px;font-size:11px" onclick="removeResource(${i})">✕</button>
+        <button title="Edit" class="icon-btn" style="color:#1a3c5e" onclick="openEditModal(${i})">✏️</button>
+        <button title="Remove" class="icon-btn icon-btn-danger" style="color:#c0392b;font-size:13px" onclick="removeResource(${i})">✕</button>
       </td>
     `;
     tbody.appendChild(tr);
