@@ -502,6 +502,7 @@ tbody tr:active td { background: #c8daf5 !important; }
   <button class="btn-light" onclick="openTrendModal()" style="border-color:#8e44ad;color:#8e44ad">📈 Coverage Report</button>
   <button class="btn-light" onclick="clearMonthData()">Clear This Month</button>
   <button class="btn-danger" onclick="clearAll()">Reset All Data</button>
+  <button class="btn-light" onclick="openHelp()" title="Help" style="font-weight:700;border-color:#1a3c5e;color:#1a3c5e">?</button>
 </div>
 
 <!-- Cloud Sync Panel -->
@@ -3888,6 +3889,198 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
     <div class="ldm-body" id="ldmBody"></div>
   </div>
 </div>
+
+<style>
+#helpOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:10000; align-items:center; justify-content:center; }
+#helpOverlay.open { display:flex; }
+#helpModal { background:#fff; border-radius:10px; width:820px; max-width:96vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.25); overflow:hidden; }
+.hm-header { background:#1a3c5e; color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.hm-header h3 { margin:0; font-size:16px; font-weight:700; }
+.hm-body { display:flex; flex:1; overflow:hidden; }
+.hm-nav { width:180px; flex-shrink:0; background:#f0f4fa; border-right:1px solid #dde6f0; overflow-y:auto; padding:12px 0; }
+.hm-nav a { display:block; padding:7px 16px; font-size:12px; color:#1a3c5e; text-decoration:none; border-left:3px solid transparent; transition:background .12s; cursor:pointer; }
+.hm-nav a:hover, .hm-nav a.active { background:#dde6f0; border-left-color:#1a3c5e; font-weight:600; }
+.hm-content { flex:1; overflow-y:auto; padding:20px 24px 30px; }
+.hm-section { margin-bottom:28px; scroll-margin-top:12px; }
+.hm-section h4 { font-size:14px; font-weight:700; color:#1a3c5e; border-left:4px solid #1a3c5e; padding-left:10px; margin:0 0 10px; }
+.hm-section ul { margin:0; padding-left:18px; }
+.hm-section ul li { font-size:12px; color:#333; margin-bottom:5px; line-height:1.55; }
+.hm-section ul li strong { color:#1a3c5e; }
+.hm-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+.hm-table th { background:#f0f4fa; color:#1a3c5e; font-weight:700; text-align:left; padding:5px 10px; border:1px solid #dde; }
+.hm-table td { padding:5px 10px; border:1px solid #eee; color:#333; vertical-align:top; }
+.hm-tag { display:inline-block; background:#e8f0fe; color:#1a3c5e; border-radius:3px; padding:1px 6px; font-family:monospace; font-size:11px; font-weight:700; }
+</style>
+
+<div class="modal-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+  <div id="helpModal">
+    <div class="hm-header">
+      <h3>📖 How to Use — Shift Coverage Tracker</h3>
+      <button onclick="closeHelp()" style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div class="hm-body">
+      <nav class="hm-nav" id="hmNav">
+        <a onclick="hmScroll('hm-start')">🚀 Getting Started</a>
+        <a onclick="hmScroll('hm-grid')">📋 Main Grid</a>
+        <a onclick="hmScroll('hm-status')">🔤 Status Codes</a>
+        <a onclick="hmScroll('hm-dayview')">🕐 Day View</a>
+        <a onclick="hmScroll('hm-live')">⚡ Today &amp; Next 4h</a>
+        <a onclick="hmScroll('hm-resources')">👥 Resources</a>
+        <a onclick="hmScroll('hm-shifts')">⏰ Shifts</a>
+        <a onclick="hmScroll('hm-locations')">📍 Locations</a>
+        <a onclick="hmScroll('hm-holidays')">🚩 Holidays</a>
+        <a onclick="hmScroll('hm-sync')">☁ Cloud Sync</a>
+        <a onclick="hmScroll('hm-report')">📈 Coverage Report</a>
+      </nav>
+      <div class="hm-content" id="hmContent">
+
+        <div class="hm-section" id="hm-start">
+          <h4>🚀 Getting Started</h4>
+          <ul>
+            <li>Select your <strong>View Timezone</strong> from the dropdown at the top — all times and the today-highlight are based on this timezone.</li>
+            <li>Use the <strong>Month picker</strong> to navigate between months. The grid updates to show that month's data.</li>
+            <li>The <strong>main grid</strong> shows all resources as rows and calendar days as columns. Each cell is editable — type a status code directly into the cell.</li>
+            <li>Data is saved automatically to your browser's local storage and pushed to cloud sync if configured.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-grid">
+          <h4>📋 Main Grid</h4>
+          <ul>
+            <li>Each <strong>column</strong> represents a calendar day. Click the day number to open the <strong>Day View</strong> for hour-by-hour breakdown.</li>
+            <li>The <strong>today's date</strong> column (#, Day, Date headers) is highlighted in yellow based on the selected view timezone.</li>
+            <li>A <strong>🚩 flag icon</strong> appears on dates that are marked as holidays for any location.</li>
+            <li>Click any <strong>resource name row</strong> to open the Day View for that day.</li>
+            <li>The <strong>coverage % row</strong> at the bottom shows per-day availability percentage, color-coded green → red.</li>
+            <li>Use <strong>Quick Filter</strong> to search resources by name. Use <strong>⚙ Advanced Filter</strong> to filter by shift, location, or off-day pattern.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-status">
+          <h4>🔤 Status Codes</h4>
+          <p style="font-size:12px;color:#555;margin:0 0 8px">Type these codes directly into any cell in the main grid:</p>
+          <table class="hm-table">
+            <thead><tr><th>Code</th><th>Meaning</th><th>Availability Weight</th></tr></thead>
+            <tbody>
+              <tr><td><span class="hm-tag">(blank)</span></td><td>Present / Available (default)</td><td style="color:#27ae60;font-weight:700">100%</td></tr>
+              <tr><td><span class="hm-tag">PN1</span></td><td>Part Night 1 — off 1st half, present 2nd half</td><td style="color:#f39c12;font-weight:700">50%</td></tr>
+              <tr><td><span class="hm-tag">PN2</span></td><td>Part Night 2 — present 1st half, off 2nd half</td><td style="color:#f39c12;font-weight:700">50%</td></tr>
+              <tr><td><span class="hm-tag">PTO1</span></td><td>PTO 1st half, present 2nd half</td><td style="color:#f39c12;font-weight:700">50%</td></tr>
+              <tr><td><span class="hm-tag">PTO2</span></td><td>Present 1st half, PTO 2nd half</td><td style="color:#f39c12;font-weight:700">50%</td></tr>
+              <tr><td><span class="hm-tag">HOL</span></td><td>Holiday — full day off</td><td style="color:#e74c3c;font-weight:700">0%</td></tr>
+              <tr><td><span class="hm-tag">anything else</span></td><td>Absent / Leave</td><td style="color:#e74c3c;font-weight:700">0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hm-section" id="hm-dayview">
+          <h4>🕐 Day View</h4>
+          <ul>
+            <li>Click any <strong>day number</strong> in the grid header to open the Day View for that day.</li>
+            <li>Shows each resource as a row with <strong>hour columns</strong> representing their shift — green = present, gradient = partial (PN/PTO), red = absent, grey = outside shift.</li>
+            <li>The <strong>Coverage %</strong> row shows per-hour availability percentage, color-coded green → red.</li>
+            <li>The <strong>Total Available</strong> row shows a headcount of available resources per hour.</li>
+            <li><strong>Hover</strong> over an hour column to see a tooltip with coverage % and resource count.</li>
+            <li><strong>Click and drag</strong> across hours to select a range — the Range Summary panel shows the average coverage for the selected period.</li>
+            <li>The <strong>Overall daily coverage</strong> bar at the top summarises the whole day.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-live">
+          <h4>⚡ Today &amp; Next 4 Hours</h4>
+          <ul>
+            <li>The two boxes at the top show <strong>current hour coverage</strong> and <strong>next 4 hours average</strong>, updated every minute and on every sync.</li>
+            <li>The progress bar and percentage use a green → red gradient based on availability.</li>
+            <li><strong>Click either box</strong> to open a popout showing available resources grouped by shift for that time window.</li>
+            <li>Only resources whose shift overlaps the time window and who are available are shown.</li>
+            <li>Times in the popout are displayed in the <strong>selected view timezone</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-resources">
+          <h4>👥 Manage Resources</h4>
+          <ul>
+            <li>Click <strong>Manage Resources</strong> in the toolbar to open the management panel.</li>
+            <li>Click <strong>+ Add Resource</strong> to add a new team member — enter their name, assign a shift (preset or custom), set off days, and pick a location.</li>
+            <li>Click the <strong>✏️ icon</strong> to edit an existing resource. Renaming a resource automatically migrates all their stored cell data to the new name.</li>
+            <li>Click the <strong>✕ icon</strong> to remove a resource.</li>
+            <li><strong>Off Days</strong> can be set as preset patterns (Mon–Fri, Tue–Sat, etc.) or a custom comma-separated list (e.g. <span class="hm-tag">Sat,Sun</span>).</li>
+            <li>Use <strong>checkboxes</strong> to select multiple resources, then click <strong>⋯</strong> to apply holidays to all checked resources at once.</li>
+            <li>Auto-pull is paused while the modal is open to prevent data conflicts during editing. A pull runs automatically after each save.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-shifts">
+          <h4>⏰ Shifts</h4>
+          <ul>
+            <li>Open <strong>Manage Resources → Shifts tab</strong> to create and manage shift configurations.</li>
+            <li>Each shift has a <strong>Label</strong> (e.g. "US Morning"), <strong>Start/End time</strong>, and an optional <strong>source timezone</strong> — times are converted to the view timezone automatically.</li>
+            <li>Assign a shift to a resource via the <strong>Shift Preset</strong> dropdown when adding or editing a resource.</li>
+            <li>Shift times appear in the main grid header and day view, converted to the selected view timezone.</li>
+            <li>Click ✏️ to edit a shift or ✕ to remove it.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-locations">
+          <h4>📍 Locations</h4>
+          <ul>
+            <li>Open <strong>Manage Resources → Locations tab</strong> to add locations (e.g. "Manila", "US", "India").</li>
+            <li>Each location can have its own <strong>holiday dates</strong> assigned to it.</li>
+            <li>Resources are assigned a location when added or edited — this links them to that location's holidays.</li>
+            <li>Remove a location with the ✕ button — this does not remove resources assigned to it.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-holidays">
+          <h4>🚩 Holidays</h4>
+          <ul>
+            <li>Open <strong>Manage Resources → Locations tab</strong> and add holiday dates to each location.</li>
+            <li>In the <strong>main grid</strong>, select resources using their checkboxes, then click the <strong>⋯ button</strong> and choose <strong>Apply holidays to checked</strong> — this fills <span class="hm-tag">HOL</span> on all holiday dates for each checked resource's location.</li>
+            <li>Days with holidays for any location show a <strong>🚩 flag icon</strong> in the date header. Hover to see which locations observe the holiday.</li>
+            <li>Holidays are per-location, so resources in different regions see only their relevant holidays applied.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-sync">
+          <h4>☁ Cloud Sync</h4>
+          <ul>
+            <li>Click <strong>☁ Cloud Sync</strong> in the toolbar to configure the sync URL (Google Apps Script web app URL).</li>
+            <li>Once a URL is set, data is <strong>automatically pushed</strong> 2 seconds after every change (debounced).</li>
+            <li>Push uses a <strong>pull-before-push merge</strong> — it fetches the server state first, overlays only your local changes, then pushes — safe for multiple users editing different cells simultaneously.</li>
+            <li>Click <strong>⟳</strong> to manually pull the latest data from the server at any time.</li>
+            <li>Enable <strong>Auto-pull</strong> to automatically pull on a set interval (e.g. every 60 seconds).</li>
+            <li>Auto-pull is <strong>paused while editing</strong> a cell or while Manage Resources is open, to prevent overwriting in-progress edits.</li>
+            <li>A <strong>✔ Saved</strong> toast appears on data changes; <strong>✔ Successfully synced</strong> appears on push/pull completion.</li>
+          </ul>
+        </div>
+
+        <div class="hm-section" id="hm-report">
+          <h4>📈 Coverage Report</h4>
+          <ul>
+            <li>Click <strong>📈 Coverage Report</strong> in the toolbar to open the report modal.</li>
+            <li><strong>Yearly view</strong> — bar chart with one bar per month for the selected year. Shows avg available / total resources and coverage %.</li>
+            <li><strong>Monthly view</strong> — bar chart with one bar per day for the selected month. Labels show abbreviated day name + date number.</li>
+            <li><strong>Weekly view</strong> — bar chart with one bar per week. Select a specific week to drill down into daily bars for that week.</li>
+            <li>Each bar shows <strong>X/Y</strong> (avg available / total resources) and <strong>coverage %</strong> above it.</li>
+            <li>Bar colors use the same <strong>green → red gradient</strong>: ≥50% = green, sliding through yellow/orange to red at 0%.</li>
+            <li>The <strong>resource table</strong> below the chart shows per-resource breakdown: present days, half days, absences, holidays, and overall availability %.</li>
+            <li>Historical months use a <strong>monthly snapshot</strong> of the resource list taken at the time of editing, so shift changes don't retroactively alter past reports.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openHelp() { document.getElementById('helpOverlay').classList.add('open'); }
+function closeHelp() { document.getElementById('helpOverlay').classList.remove('open'); }
+function hmScroll(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
 
 <div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:6px 0;font-size:11px;color:#aab;background:#f5f7fa;border-top:1px solid #e0e6ef;z-index:999">
   Built by <strong style="color:#1a3c5e">Ken Padulla</strong> &nbsp;·&nbsp; CloudOps Team &nbsp;·&nbsp; 2026
