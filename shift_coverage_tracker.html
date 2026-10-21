@@ -3225,86 +3225,76 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
   const tzNow   = nowInTZ();
   const ym      = currentMonth();
   if (!ym) return;
-  const [y, m]  = ym.split('-').map(Number);
   const day     = tzNow.date;
   const dayName = getDayInfo(ym, day).dayName;
   const resData = buildResData(day, dayName);
+  const hours   = Array.from({ length: hEnd - hStart + 1 }, (_, i) => hStart + i);
 
-  // Determine which resources are available in ANY hour of the range
-  function isAvailableInHour(d, h) {
-    if (d.isOff) return false;
-    if (!inShift(h, d.start, d.end)) return false;
-    if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
-    if (['pn1','pto1','hol1'].includes(d.statusClass)) return inShift(h, shiftMidHour(d.start, d.end), d.end);
-    if (['pn2','pto2','hol2'].includes(d.statusClass)) return !inShift(h, shiftMidHour(d.start, d.end), d.end);
-    return true;
+  function blockClass(d, h) {
+    if (d.isOff) return 'off';
+    if (!inShift(h, d.start, d.end)) return 'outside';
+    if (['pn1','pn2','pto1','pto2'].includes(d.statusClass)) {
+      const mid = shiftMidHour(d.start, d.end);
+      const inSecond = inShift(h, mid, d.end);
+      if (['pn1','pto1'].includes(d.statusClass)) return inSecond ? 'present' : d.statusClass;
+      return inSecond ? d.statusClass : 'present';
+    }
+    return d.statusClass;
   }
 
-  function statusLabel(sc) {
-    if (sc === 'present') return 'Present';
-    if (sc === 'pn1' || sc === 'pn2') return 'Part Night';
-    if (sc === 'pto1' || sc === 'pto2') return 'PTO';
-    if (sc === 'hol' || sc === 'hol1' || sc === 'hol2') return 'Holiday';
-    if (sc === 'absent') return 'Absent';
-    return sc;
+  function isAvailableInRange(d) {
+    return hours.some(h => {
+      const bc = blockClass(d, h);
+      return bc === 'present' || bc === 'pn1' || bc === 'pn2' || bc === 'pto1' || bc === 'pto2';
+    });
   }
 
-  // Group resources by shift label
-  const shiftGroups = {};
-  shiftConfigs.forEach(cfg => { shiftGroups[cfg.label] = { cfg, available: [], unavailable: [] }; });
-  shiftGroups['(No Shift)'] = shiftGroups['(No Shift)'] || { cfg: null, available: [], unavailable: [] };
+  // Group by shift — only resources that overlap the range AND are available
+  const groups = {};
+  shiftConfigs.forEach(cfg => { groups[cfg.label] = { cfg, members: [] }; });
 
   resData.forEach(d => {
     if (d.isOff) return;
+    if (!hours.some(h => inShift(h, d.start, d.end))) return; // no overlap
+    if (!isAvailableInRange(d)) return; // not available
     const grpKey = d.res.shiftLabel || '(No Shift)';
-    if (!shiftGroups[grpKey]) shiftGroups[grpKey] = { cfg: null, available: [], unavailable: [] };
-    const avail = Array.from({ length: hEnd - hStart + 1 }, (_, i) => hStart + i)
-      .some(h => isAvailableInHour(d, h));
-    const sc = d.statusClass;
-    if (avail) shiftGroups[grpKey].available.push({ name: d.res.name, sc });
-    else       shiftGroups[grpKey].unavailable.push({ name: d.res.name, sc });
+    if (!groups[grpKey]) groups[grpKey] = { cfg: null, members: [] };
+    groups[grpKey].members.push(d);
   });
 
-  const dotColor = sc => {
-    if (sc === 'present') return '#27ae60';
-    if (['pn1','pn2','pto1','pto2'].includes(sc)) return '#f39c12';
-    return '#e74c3c';
-  };
+  const pad = n => String(n).padStart(2,'0');
+  const viewSuffix = selectedTZ === 'Local (browser)' ? 'Local' : selectedTZ.split('/').pop().replace(/_/g, ' ');
+  const viewTimeStr = hStart === hEnd
+    ? `${pad(hStart)}:00 – ${pad(hStart + 1)}:00 ${viewSuffix}`
+    : `${pad(hStart)}:00 – ${pad(hEnd + 1)}:00 ${viewSuffix}`;
+  let bodyHtml = ``;
 
-  let bodyHtml = `<div class="ldm-time">${timeStr}</div>`;
-  Object.entries(shiftGroups).forEach(([shiftLabel, grp]) => {
-    if (grp.available.length === 0 && grp.unavailable.length === 0) return;
+  Object.entries(groups).forEach(([shiftLabel, grp]) => {
+    if (!grp.members.length) return;
     const cfg = grp.cfg || shiftConfigs.find(c => c.label === shiftLabel);
-    const timeInfo = cfg ? ` · ${String(cfg.start).padStart(2,'0')}:00–${String(cfg.end).padStart(2,'0')}:00` : '';
-    const total = grp.available.length + grp.unavailable.length;
-    const covColor = total > 0 ? pctToColor(Math.round(grp.available.length / total * 100)) : '#bbb';
+    const timeInfo = cfg ? ` · ${formatShiftInViewTZ({ shiftStart: cfg.start, shiftEnd: cfg.end, tz: cfg.tz }) || `${cfg.start}–${cfg.end}`}` : '';
+
+    const rows = grp.members.map(d =>
+      `<div class="ldm-res-row">
+        <div class="ldm-res-dot" style="background:#27ae60"></div>
+        <span class="ldm-res-name">${d.res.name}</span>
+      </div>`
+    ).join('');
+
     bodyHtml += `<div class="ldm-shift">
       <div class="ldm-shift-head">
         <span>${shiftLabel}${timeInfo}</span>
-        <span class="ldm-cov" style="color:${covColor}">${grp.available.length}/${total} available</span>
-      </div>`;
-    if (grp.available.length === 0 && grp.unavailable.length === 0) {
-      bodyHtml += `<div class="ldm-empty">No resources</div>`;
-    } else {
-      grp.available.forEach(r => {
-        bodyHtml += `<div class="ldm-res-row">
-          <div class="ldm-res-dot" style="background:${dotColor(r.sc)}"></div>
-          <span class="ldm-res-name">${r.name}</span>
-          <span class="ldm-res-status">${statusLabel(r.sc)}</span>
-        </div>`;
-      });
-      grp.unavailable.forEach(r => {
-        bodyHtml += `<div class="ldm-res-row" style="opacity:.45">
-          <div class="ldm-res-dot" style="background:${dotColor(r.sc)}"></div>
-          <span class="ldm-res-name">${r.name}</span>
-          <span class="ldm-res-status">${statusLabel(r.sc)}</span>
-        </div>`;
-      });
-    }
-    bodyHtml += `</div>`;
+        <span class="ldm-cov" style="color:${pctToColor(100)}">${grp.members.length} available</span>
+      </div>
+      ${rows}
+    </div>`;
   });
 
-  document.getElementById('ldmTitle').textContent = label;
+  if (!Object.values(groups).some(g => g.members.length)) {
+    bodyHtml += `<div style="color:#aaa;font-size:12px;padding:12px 0">No resources available for this period.</div>`;
+  }
+
+  document.getElementById('ldmTitle').innerHTML = `${label} <span style="font-size:12px;font-weight:400;opacity:.8">${viewTimeStr}</span>`;
   document.getElementById('ldmBody').innerHTML = bodyHtml;
   document.getElementById('liveDetailOverlay').classList.add('open');
 }
