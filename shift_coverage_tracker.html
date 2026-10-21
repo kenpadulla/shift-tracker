@@ -1808,10 +1808,10 @@ function renderGrid() {
   const trTitle = document.createElement('tr');
   trTitle.className = 'row-title';
   trTitle.innerHTML = `
-    <th class="col-day" rowspan="3">#</th>
-    <th class="col-dayname" rowspan="3">Day</th>
-    <th class="col-date" rowspan="3">Date</th>
-    <th class="col-cov" rowspan="3">Coverage</th>
+    <th class="col-day" rowspan="2">#</th>
+    <th class="col-dayname" rowspan="2">Day</th>
+    <th class="col-date" rowspan="2">Date</th>
+    <th class="col-cov" rowspan="2">Coverage</th>
   `;
   visibleResources.forEach((res, ri) => {
     const th = document.createElement('th');
@@ -1827,20 +1827,7 @@ function renderGrid() {
   });
   thead.appendChild(trTitle);
 
-  // Row 2: off days
-  const trOff = document.createElement('tr');
-  trOff.className = 'row-offdays';
-  visibleResources.forEach((res, ri) => {
-    const th = document.createElement('th');
-    th.colSpan = 1;
-    th.className = 'res-first';
-    if (ri % 2 !== 0) th.style.background = '#2a5580';
-    th.textContent = `Off: ${offLabel(res)}`;
-    trOff.appendChild(th);
-  });
-  thead.appendChild(trOff);
-
-  // Row 3: sub-cols (Status only — one col per resource)
+  // Row 2: sub-cols (Status only — one col per resource)
   const trSub = document.createElement('tr');
   trSub.className = 'row-sub';
   visibleResources.forEach((res, ri) => {
