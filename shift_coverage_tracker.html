@@ -1709,6 +1709,7 @@ function renderGrid() {
   }
 
   const days = daysInMonth(ym);
+  const [gy, gm] = ym.split('-').map(Number);
   const table = document.createElement('table');
 
   // ── thead ──
@@ -1778,10 +1779,18 @@ function renderGrid() {
     if (allOff) tr.className = 'is-off';
 
     const clickStyle = 'cursor:pointer;user-select:none';
+    const dateStr = `${gy}-${String(gm).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const curHols = loadHolidays();
+    const holLocs = Object.entries(curHols)
+      .filter(([, hols]) => Array.isArray(hols) && hols.includes(dateStr))
+      .map(([loc]) => loc);
+    const flagHtml = holLocs.length
+      ? `<span title="Holiday: ${holLocs.join(', ')}" style="font-size:11px;cursor:default;margin-left:3px;vertical-align:middle" onclick="event.stopPropagation()">🚩</span>`
+      : '';
     tr.innerHTML = `
       <td class="col-day" title="Click to see day breakdown" style="${clickStyle}">${day}</td>
       <td class="col-dayname" title="Click to see day breakdown" style="${clickStyle}">${dayName}</td>
-      <td class="col-date" title="Click to see day breakdown" style="font-size:11px;${clickStyle}">${date}</td>
+      <td class="col-date" title="Click to see day breakdown" style="font-size:11px;${clickStyle}">${date}${flagHtml}</td>
     `;
     tr.querySelectorAll('td').forEach(td => td.addEventListener('click', () => openDayModal(day)));
 
