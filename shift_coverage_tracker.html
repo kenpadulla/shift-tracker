@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #f0f2f5; font-size: 13px; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; font-size: 13px; padding-bottom: 32px; }
 
 header {
   background: #1a3c5e; color: #fff; padding: 14px 20px;
@@ -3175,12 +3175,12 @@ function renderLiveBar() {
     return 'c-low';
   }
 
-  function makeBox(label, timeStr, pct, names) {
+  function makeBox(label, timeStr, pct, names, hStart, hEnd) {
     const color   = pct !== null ? pctToColor(pct) : '#bbb';
     const pctTxt  = pct === null ? '—' : pct + '%';
     const fillW   = pct ?? 0;
     const namesTxt = names.length ? names.join(', ') : 'None available';
-    return `<div class="live-box">
+    return `<div class="live-box" style="cursor:pointer" onclick="openLiveDetail(${hStart},${hEnd},'${label}','${timeStr}')">
       <div class="lb-label">${label}</div>
       <div class="lb-time">${timeStr}</div>
       <div class="lb-pct" style="color:${color}">${pctTxt}</div>
@@ -3194,7 +3194,7 @@ function renderLiveBar() {
   const dateLabel = `${m}/${day}/${y}`;
   const curPct   = liveCoverage(curH);
   const curNames = availableNames(curH);
-  let html = makeBox(`Today · ${dateLabel}`, curLabel, curPct, curNames);
+  let html = makeBox(`Today · ${dateLabel}`, curLabel, curPct, curNames, curH, curH);
 
   // Box 2: next 4 hours from now
   const next4Start = curH + 1;
@@ -3212,9 +3212,101 @@ function renderLiveBar() {
   const next4TimeStr = next4Start <= next4End
     ? `${String(next4Start).padStart(2,'0')}:00 – ${String(next4End + 1).padStart(2,'0')}:00`
     : 'No upcoming hours';
-  html += makeBox('Next 4 hours', next4TimeStr, next4Avg, [...next4Names]);
+  html += makeBox('Next 4 hours', next4TimeStr, next4Avg, [...next4Names], next4Start, next4End);
 
   bar.innerHTML = html;
+}
+
+function closeLiveDetail() {
+  document.getElementById('liveDetailOverlay').classList.remove('open');
+}
+
+function openLiveDetail(hStart, hEnd, label, timeStr) {
+  const tzNow   = nowInTZ();
+  const ym      = currentMonth();
+  if (!ym) return;
+  const [y, m]  = ym.split('-').map(Number);
+  const day     = tzNow.date;
+  const dayName = getDayInfo(ym, day).dayName;
+  const resData = buildResData(day, dayName);
+
+  // Determine which resources are available in ANY hour of the range
+  function isAvailableInHour(d, h) {
+    if (d.isOff) return false;
+    if (!inShift(h, d.start, d.end)) return false;
+    if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
+    if (['pn1','pto1','hol1'].includes(d.statusClass)) return inShift(h, shiftMidHour(d.start, d.end), d.end);
+    if (['pn2','pto2','hol2'].includes(d.statusClass)) return !inShift(h, shiftMidHour(d.start, d.end), d.end);
+    return true;
+  }
+
+  function statusLabel(sc) {
+    if (sc === 'present') return 'Present';
+    if (sc === 'pn1' || sc === 'pn2') return 'Part Night';
+    if (sc === 'pto1' || sc === 'pto2') return 'PTO';
+    if (sc === 'hol' || sc === 'hol1' || sc === 'hol2') return 'Holiday';
+    if (sc === 'absent') return 'Absent';
+    return sc;
+  }
+
+  // Group resources by shift label
+  const shiftGroups = {};
+  shiftConfigs.forEach(cfg => { shiftGroups[cfg.label] = { cfg, available: [], unavailable: [] }; });
+  shiftGroups['(No Shift)'] = shiftGroups['(No Shift)'] || { cfg: null, available: [], unavailable: [] };
+
+  resData.forEach(d => {
+    if (d.isOff) return;
+    const grpKey = d.res.shiftLabel || '(No Shift)';
+    if (!shiftGroups[grpKey]) shiftGroups[grpKey] = { cfg: null, available: [], unavailable: [] };
+    const avail = Array.from({ length: hEnd - hStart + 1 }, (_, i) => hStart + i)
+      .some(h => isAvailableInHour(d, h));
+    const sc = d.statusClass;
+    if (avail) shiftGroups[grpKey].available.push({ name: d.res.name, sc });
+    else       shiftGroups[grpKey].unavailable.push({ name: d.res.name, sc });
+  });
+
+  const dotColor = sc => {
+    if (sc === 'present') return '#27ae60';
+    if (['pn1','pn2','pto1','pto2'].includes(sc)) return '#f39c12';
+    return '#e74c3c';
+  };
+
+  let bodyHtml = `<div class="ldm-time">${timeStr}</div>`;
+  Object.entries(shiftGroups).forEach(([shiftLabel, grp]) => {
+    if (grp.available.length === 0 && grp.unavailable.length === 0) return;
+    const cfg = grp.cfg || shiftConfigs.find(c => c.label === shiftLabel);
+    const timeInfo = cfg ? ` · ${String(cfg.start).padStart(2,'0')}:00–${String(cfg.end).padStart(2,'0')}:00` : '';
+    const total = grp.available.length + grp.unavailable.length;
+    const covColor = total > 0 ? pctToColor(Math.round(grp.available.length / total * 100)) : '#bbb';
+    bodyHtml += `<div class="ldm-shift">
+      <div class="ldm-shift-head">
+        <span>${shiftLabel}${timeInfo}</span>
+        <span class="ldm-cov" style="color:${covColor}">${grp.available.length}/${total} available</span>
+      </div>`;
+    if (grp.available.length === 0 && grp.unavailable.length === 0) {
+      bodyHtml += `<div class="ldm-empty">No resources</div>`;
+    } else {
+      grp.available.forEach(r => {
+        bodyHtml += `<div class="ldm-res-row">
+          <div class="ldm-res-dot" style="background:${dotColor(r.sc)}"></div>
+          <span class="ldm-res-name">${r.name}</span>
+          <span class="ldm-res-status">${statusLabel(r.sc)}</span>
+        </div>`;
+      });
+      grp.unavailable.forEach(r => {
+        bodyHtml += `<div class="ldm-res-row" style="opacity:.45">
+          <div class="ldm-res-dot" style="background:${dotColor(r.sc)}"></div>
+          <span class="ldm-res-name">${r.name}</span>
+          <span class="ldm-res-status">${statusLabel(r.sc)}</span>
+        </div>`;
+      });
+    }
+    bodyHtml += `</div>`;
+  });
+
+  document.getElementById('ldmTitle').textContent = label;
+  document.getElementById('ldmBody').innerHTML = bodyHtml;
+  document.getElementById('liveDetailOverlay').classList.add('open');
 }
 
 let _liveBarTimer = null;
@@ -3739,7 +3831,35 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeTrendModal();
 });
 </script>
-<div style="text-align:center;padding:18px 0 12px;font-size:11px;color:#aab;border-top:1px solid #e0e6ef;margin-top:32px">
+<style>
+#liveDetailOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; }
+#liveDetailOverlay.open { display:flex; }
+#liveDetailModal { background:#fff; border-radius:10px; width:480px; max-width:95vw; max-height:88vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.22); }
+.ldm-header { background:#1a3c5e; color:#fff; padding:14px 18px; border-radius:10px 10px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.ldm-header h3 { margin:0; font-size:15px; }
+.ldm-body { padding:16px 18px 18px; }
+.ldm-time { font-size:12px; color:#888; margin-bottom:14px; }
+.ldm-shift { margin-bottom:14px; border:1px solid #e0e6ef; border-radius:7px; overflow:hidden; }
+.ldm-shift-head { background:#f0f4fa; padding:8px 12px; font-size:12px; font-weight:700; color:#1a3c5e; display:flex; justify-content:space-between; align-items:center; }
+.ldm-shift-head .ldm-cov { font-size:11px; font-weight:700; }
+.ldm-res-row { padding:6px 12px; font-size:12px; border-top:1px solid #f0f0f0; display:flex; align-items:center; gap:8px; }
+.ldm-res-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.ldm-res-name { font-weight:600; color:#1a3c5e; }
+.ldm-res-status { color:#888; font-size:11px; }
+.ldm-empty { padding:8px 12px; font-size:12px; color:#aaa; font-style:italic; }
+</style>
+
+<div class="modal-overlay" id="liveDetailOverlay" onclick="if(event.target===this)closeLiveDetail()">
+  <div id="liveDetailModal">
+    <div class="ldm-header">
+      <h3 id="ldmTitle">Resource Availability</h3>
+      <button onclick="closeLiveDetail()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div class="ldm-body" id="ldmBody"></div>
+  </div>
+</div>
+
+<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:6px 0;font-size:11px;color:#aab;background:#f5f7fa;border-top:1px solid #e0e6ef;z-index:999">
   Built by <strong style="color:#1a3c5e">Ken Padulla</strong> &nbsp;·&nbsp; CloudOps Team &nbsp;·&nbsp; 2026
 </div>
 </body>
