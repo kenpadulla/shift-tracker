@@ -413,6 +413,17 @@ tbody tr:active td { background: #c8daf5 !important; }
 
 .chip button.btn-edit { background: #2980b9; color: #fff; border-radius: 50%; padding: 0; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; }
 .btn-light.filter-active { background: #2980b9; color: #fff; border-color: #2471a3; }
+
+/* Saved toast */
+#savedToast {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 99999;
+  background: rgba(30,132,73,0.88); color: #fff;
+  padding: 7px 16px 7px 12px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 7px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18); pointer-events: none;
+  opacity: 0; transition: opacity 0.25s ease;
+}
+#savedToast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -763,7 +774,18 @@ tbody tr:active td { background: #c8daf5 !important; }
   </div>
 </div>
 
+<div id="savedToast">✔ Saved</div>
+
 <script>
+// ── Saved toast ──────────────────────────────────────────────────
+let _savedToastTimer = null;
+function showSavedToast() {
+  const el = document.getElementById('savedToast');
+  el.classList.add('show');
+  clearTimeout(_savedToastTimer);
+  _savedToastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+}
+
 // ── Storage helpers ──────────────────────────────────────────────
 const LS_RESOURCES    = 'sct_resources';
 const LS_DATA         = 'sct_data';
@@ -774,22 +796,22 @@ const LS_HOLIDAYS     = 'sct_holidays';
 function loadResources() {
   try { return JSON.parse(localStorage.getItem(LS_RESOURCES)) || []; } catch { return []; }
 }
-function saveResources(r) { localStorage.setItem(LS_RESOURCES, JSON.stringify(r)); autoSyncPushIfEnabled(); }
+function saveResources(r) { localStorage.setItem(LS_RESOURCES, JSON.stringify(r)); showSavedToast(); autoSyncPushIfEnabled(); }
 
 function loadShiftConfigs() {
   try { return JSON.parse(localStorage.getItem(LS_SHIFT_CFGS)) || []; } catch { return []; }
 }
-function saveShiftConfigs(s) { localStorage.setItem(LS_SHIFT_CFGS, JSON.stringify(s)); autoSyncPushIfEnabled(); }
+function saveShiftConfigs(s) { localStorage.setItem(LS_SHIFT_CFGS, JSON.stringify(s)); showSavedToast(); autoSyncPushIfEnabled(); }
 
 function loadLocations() {
   try { return JSON.parse(localStorage.getItem(LS_LOCATIONS)) || []; } catch { return []; }
 }
-function saveLocations(l) { localStorage.setItem(LS_LOCATIONS, JSON.stringify(l)); autoSyncPushIfEnabled(); }
+function saveLocations(l) { localStorage.setItem(LS_LOCATIONS, JSON.stringify(l)); showSavedToast(); autoSyncPushIfEnabled(); }
 
 function loadHolidays() {
   try { return JSON.parse(localStorage.getItem(LS_HOLIDAYS)) || {}; } catch { return {}; }
 }
-function saveHolidays(h) { localStorage.setItem(LS_HOLIDAYS, JSON.stringify(h)); autoSyncPushIfEnabled(); }
+function saveHolidays(h) { localStorage.setItem(LS_HOLIDAYS, JSON.stringify(h)); showSavedToast(); autoSyncPushIfEnabled(); }
 
 function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_DATA)) || {}; } catch { return {}; }
@@ -1218,6 +1240,7 @@ function setCell(day, resName, field, val) {
   const key = `${day}_${resName}_${field}`;
   getMonthData()[key] = val;
   saveData(allData);
+  showSavedToast();
   autoSyncPushIfEnabled();
 }
 
@@ -1686,6 +1709,8 @@ function populateLocationDropdowns() {
 function showAddResourceRow() {
   const row = document.getElementById('addResourceRow');
   row.style.display = 'block';
+  locations = loadLocations();
+  populateLocationDropdowns();
   document.getElementById('newName').focus();
 }
 function hideAddResourceRow() {
@@ -2406,6 +2431,7 @@ function openEditModal(i) {
   document.getElementById('editTZ').disabled         = isPreset;
   document.getElementById('editCustomOffLabel').style.display =
     res.offPreset === 'custom' ? 'flex' : 'none';
+  locations = loadLocations();
   populateLocationDropdowns();
   document.getElementById('editLocation').value = res.location || '';
   document.getElementById('editModal').classList.add('open');
@@ -2519,6 +2545,8 @@ let _manageActiveTab = 'resources';
 
 function openManageModal(tab) {
   _manageActiveTab = tab || 'resources';
+  locations    = loadLocations();
+  shiftConfigs = loadShiftConfigs();
   document.getElementById('manageOverlay').classList.add('open');
   renderResourcePanel();
   switchManageTab(_manageActiveTab, null);
