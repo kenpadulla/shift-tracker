@@ -413,9 +413,25 @@ tbody tr:active td { background: #c8daf5 !important; }
           style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
       </label>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn-success" onclick="syncPush()" style="font-size:12px">⬆ Push (save to sheet)</button>
-        <button class="btn-primary" onclick="syncPull()" style="font-size:12px">⬇ Pull (load from sheet)</button>
+        <button class="btn-success" onclick="syncPush()" style="font-size:12px">⬆ Push now</button>
+        <button class="btn-primary" onclick="syncPull()" style="font-size:12px">⬇ Pull now</button>
         <button class="btn-light"   onclick="saveSyncURL()" style="font-size:12px">💾 Save URL</button>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;align-items:center">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin:0">
+          <input type="checkbox" id="autoSyncPush" onchange="toggleAutoSync()" />
+          Auto-push on every change
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin:0">
+          <input type="checkbox" id="autoSyncPull" onchange="toggleAutoSync()" />
+          Auto-pull every
+          <select id="autoSyncInterval" onchange="toggleAutoSync()" style="padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px">
+            <option value="30">30 sec</option>
+            <option value="60" selected>1 min</option>
+            <option value="300">5 min</option>
+            <option value="600">10 min</option>
+          </select>
+        </label>
       </div>
       <div id="syncStatus" style="margin-top:8px;font-size:12px;min-height:18px"></div>
     </div>
@@ -664,12 +680,12 @@ const LS_SHIFT_CFGS   = 'sct_shift_cfgs';
 function loadResources() {
   try { return JSON.parse(localStorage.getItem(LS_RESOURCES)) || []; } catch { return []; }
 }
-function saveResources(r) { localStorage.setItem(LS_RESOURCES, JSON.stringify(r)); }
+function saveResources(r) { localStorage.setItem(LS_RESOURCES, JSON.stringify(r)); autoSyncPushIfEnabled(); }
 
 function loadShiftConfigs() {
   try { return JSON.parse(localStorage.getItem(LS_SHIFT_CFGS)) || []; } catch { return []; }
 }
-function saveShiftConfigs(s) { localStorage.setItem(LS_SHIFT_CFGS, JSON.stringify(s)); }
+function saveShiftConfigs(s) { localStorage.setItem(LS_SHIFT_CFGS, JSON.stringify(s)); autoSyncPushIfEnabled(); }
 
 function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_DATA)) || {}; } catch { return {}; }
@@ -1095,6 +1111,7 @@ function setCell(day, resName, field, val) {
   const key = `${day}_${resName}_${field}`;
   getMonthData()[key] = val;
   saveData(allData);
+  autoSyncPushIfEnabled();
 }
 
 function getCell(day, resName, field) {
@@ -1734,15 +1751,14 @@ function renderRangeResourceList(lo, hi, resData) {
     return;
   }
 
-  // Group by shift label or shift time string
+  // Group by shift label or converted shift time string
   const groups = {};
   available.forEach(d => {
+    const converted = formatShiftInViewTZ(d.res);
     const key = d.res.shiftLabel
       ? d.res.shiftLabel
-      : (d.res.shiftStart && d.res.shiftEnd
-          ? `${d.res.shiftStart}–${d.res.shiftEnd}${d.res.tz ? ' '+d.res.tz : ''}`
-          : 'No Shift Defined');
-    if (!groups[key]) groups[key] = { key, members: [], start: d.start, end: d.end, tz: d.res.tz };
+      : (converted || 'No Shift Defined');
+    if (!groups[key]) groups[key] = { key, members: [], start: d.start, end: d.end, tz: d.res.tz, converted };
     groups[key].members.push(d);
   });
 
@@ -1755,9 +1771,7 @@ function renderRangeResourceList(lo, hi, resData) {
 
   let html = '';
   sortedGroups.forEach(g => {
-    const timeStr = g.start !== null && g.end !== null
-      ? `${String(Math.floor(g.start)).padStart(2,'0')}:${g.start % 1 ? '30' : '00'}–${String(Math.floor(g.end)).padStart(2,'0')}:${g.end % 1 ? '30' : '00'}${g.tz ? ' '+g.tz : ''}`
-      : '';
+    const timeStr = g.converted || '';
 
     // Avg coverage for this shift group in range
     let gWork = 0, gTotal = 0;
@@ -1789,7 +1803,8 @@ function renderRangeResourceList(lo, hi, resData) {
 
     sorted.forEach(d => {
       const badgeLabels = { present: 'Present', pn1: 'PN1', pn2: 'PN2' };
-      const shiftStr = formatShiftInViewTZ(d.res) ? `⏰ ${formatShiftInViewTZ(d.res)}` : '';
+      const _sf = formatShiftInViewTZ(d.res);
+      const shiftStr = _sf ? `⏰ ${_sf}` : '';
       html += `<div class="rrl-resource-row">
         <span class="rrl-res-name">${d.res.name}</span>
         <span class="rrl-res-shift">${shiftStr}</span>
@@ -2249,14 +2264,85 @@ function getSheet() {
   return sheet;
 }`;
 
+const LS_AUTO_PUSH = 'sct_auto_push';
+const LS_AUTO_PULL = 'sct_auto_pull';
+const LS_AUTO_INTERVAL = 'sct_auto_interval';
+let _autoPullTimer = null;
+let _syncPushDebounce = null;
+
+function toggleAutoSync() {
+  const doPush = document.getElementById('autoSyncPush').checked;
+  const doPull = document.getElementById('autoSyncPull').checked;
+  const interval = parseInt(document.getElementById('autoSyncInterval').value);
+  localStorage.setItem(LS_AUTO_PUSH, doPush ? '1' : '0');
+  localStorage.setItem(LS_AUTO_PULL, doPull ? '1' : '0');
+  localStorage.setItem(LS_AUTO_INTERVAL, interval);
+  startAutoPull();
+}
+
+function startAutoPull() {
+  clearInterval(_autoPullTimer);
+  const doPull = document.getElementById('autoSyncPull')?.checked;
+  if (!doPull) return;
+  const secs = parseInt(document.getElementById('autoSyncInterval').value) * 1000;
+  _autoPullTimer = setInterval(() => syncPullSilent(), secs);
+}
+
+// Pull without confirm dialog — for auto-pull
+async function syncPullSilent() {
+  const url = localStorage.getItem(LS_SYNC_URL);
+  if (!url) return;
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok || !json.data || json.data.version !== 1) return;
+    const payload = json.data;
+    saveResources(payload.resources || []);
+    saveShiftConfigs(payload.shiftConfigs || []);
+    saveData(payload.data || {});
+    resources    = loadResources();
+    shiftConfigs = loadShiftConfigs();
+    allData      = loadData();
+    renderChips(); renderGrid(); renderLiveBar();
+    setSyncStatus('✓ Auto-pulled at ' + new Date().toLocaleTimeString(), '#27ae60');
+  } catch { /* silent fail */ }
+}
+
+// Called after every data change — debounced 2s
+function autoSyncPushIfEnabled() {
+  if (!document.getElementById('autoSyncPush')?.checked) return;
+  clearTimeout(_syncPushDebounce);
+  _syncPushDebounce = setTimeout(() => syncPushSilent(), 2000);
+}
+
+// Push without UI feedback noise
+async function syncPushSilent() {
+  const url = localStorage.getItem(LS_SYNC_URL);
+  if (!url) return;
+  const payload = {
+    version: 1,
+    pushedAt: new Date().toISOString(),
+    resources:    loadResources(),
+    shiftConfigs: loadShiftConfigs(),
+    data:         loadData(),
+  };
+  try {
+    const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (json.ok) setSyncStatus('✓ Auto-pushed at ' + new Date().toLocaleTimeString(), '#27ae60');
+  } catch { /* silent fail */ }
+}
+
 function toggleSyncPanel() {
   const panel = document.getElementById('syncPanel');
   const open  = panel.style.display === 'none';
   panel.style.display = open ? 'block' : 'none';
   document.getElementById('syncPanelBtn').classList.toggle('filter-active', open);
   if (open) {
-    const saved = localStorage.getItem(LS_SYNC_URL) || '';
-    document.getElementById('syncURL').value = saved;
+    document.getElementById('syncURL').value = localStorage.getItem(LS_SYNC_URL) || '';
+    document.getElementById('autoSyncPush').checked = localStorage.getItem(LS_AUTO_PUSH) === '1';
+    document.getElementById('autoSyncPull').checked = localStorage.getItem(LS_AUTO_PULL) === '1';
+    document.getElementById('autoSyncInterval').value = localStorage.getItem(LS_AUTO_INTERVAL) || '60';
   }
 }
 
@@ -2493,6 +2579,12 @@ function stopLiveBar() { clearInterval(_liveBarTimer); }
   renderGrid();
   renderLiveBar();
   startLiveBar();
+  // Restore auto-pull if it was enabled
+  if (localStorage.getItem(LS_AUTO_PULL) === '1' && localStorage.getItem(LS_SYNC_URL)) {
+    const secs = parseInt(localStorage.getItem(LS_AUTO_INTERVAL) || '60') * 1000;
+    _autoPullTimer = setInterval(() => syncPullSilent(), secs);
+    syncPullSilent(); // pull immediately on load
+  }
 })();
 </script>
 </body>
