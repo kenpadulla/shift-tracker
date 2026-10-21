@@ -34,12 +34,7 @@ button {
 .btn-success { background: #27ae60; color: #fff; }
 .btn-light   { background: #ecf0f1; color: #333; border: 1px solid #ccc; }
 
-/* RESOURCE MANAGEMENT */
-.resource-panel {
-  background: #fff; margin: 14px 20px 0; border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.12); padding: 14px;
-}
-.resource-panel h2 { font-size: 14px; margin-bottom: 10px; color: #1a3c5e; }
+/* RESOURCE MANAGEMENT (modal tabs) */
 .resource-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 10px; }
 .resource-form label { display: flex; flex-direction: column; font-size: 11px; color: #555; gap: 3px; }
 .resource-form input, .resource-form select {
@@ -55,10 +50,14 @@ button {
 .chip button { background: #c0392b; color: #fff; border-radius: 50%; padding: 0; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; }
 
 /* GRID */
-.grid-wrap { margin: 14px 20px 20px; overflow-x: auto; }
+.grid-wrap {
+  margin: 14px 20px 0;
+  overflow: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
 table {
-  border-collapse: collapse; min-width: 100%; background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.18); border-radius: 6px; overflow: hidden;
+  border-collapse: separate; border-spacing: 0; min-width: 100%; background: #fff;
 }
 
 /* Header rows */
@@ -67,18 +66,21 @@ thead tr.row-title th {
   font-size: 12px; white-space: nowrap;
   border-right: 1px solid #0d2438;
   border-bottom: 1px solid #0d2438;
+  position: sticky; z-index: 10;
 }
 thead tr.row-offdays th {
   background: #264d73; color: #aed6f1; text-align: center;
   padding: 4px 6px; font-size: 11px;
   border-right: 1px solid #0d2438;
   border-bottom: 1px solid #0d2438;
+  position: sticky; z-index: 10;
 }
 thead tr.row-sub th {
   background: #2e5f8a; color: #d6eaf8; text-align: center;
   padding: 4px 6px; font-size: 10px; font-weight: normal;
   border-right: 1px solid #0d2438;
   border-bottom: 2px solid #0d2438;
+  position: sticky; z-index: 10;
 }
 
 /* Thick left border on every resource column group in header */
@@ -155,6 +157,24 @@ td.status-pn2 {
 }
 td.status-pn2 input { color: #1e6b3a; font-weight: bold; }
 
+/* PTO1 = 1st half PTO: gray left, green right */
+td.status-pto1 {
+  background: linear-gradient(to right, #d5d8dc 50%, #a9dfbf 50%) !important;
+}
+td.status-pto1 input { color: #1e6b3a; font-weight: bold; }
+
+/* PTO2 = 2nd half PTO: green left, gray right */
+td.status-pto2 {
+  background: linear-gradient(to right, #a9dfbf 50%, #d5d8dc 50%) !important;
+}
+td.status-pto2 input { color: #1e6b3a; font-weight: bold; }
+
+/* HOL = Full day Holiday */
+td.status-hol {
+  background: #a8dadc !important;
+}
+td.status-hol input { color: #1a6e72; font-weight: bold; }
+
 td.status-leave { background: #fadbd8 !important; }
 td.status-leave input { color: #c0392b; }
 
@@ -174,25 +194,25 @@ td.col-status.auto-off input { color: #bbb; }
 
 /* Live status bar */
 .live-bar {
-  margin: 0 20px 14px; display: flex; gap: 12px; flex-wrap: wrap;
+  margin: 0 20px 8px; display: flex; gap: 8px; flex-wrap: wrap;
 }
 .live-box {
-  background: #fff; border-radius: 8px; padding: 14px 18px; flex: 1; min-width: 200px;
-  box-shadow: 0 1px 5px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 4px;
+  background: #fff; border-radius: 6px; padding: 7px 12px; flex: 1; min-width: 160px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 2px;
 }
-.live-box .lb-label { font-size: 11px; color: #777; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-.live-box .lb-time  { font-size: 12px; color: #1a3c5e; font-weight: 700; margin-bottom: 2px; }
-.live-box .lb-pct   { font-size: 32px; font-weight: 800; line-height: 1; }
+.live-box .lb-label { font-size: 10px; color: #777; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.live-box .lb-time  { font-size: 11px; color: #1a3c5e; font-weight: 700; }
+.live-box .lb-pct   { font-size: 20px; font-weight: 800; line-height: 1; }
 .live-box .lb-pct.c-high { color: #1e8449; }
 .live-box .lb-pct.c-mid  { color: #b7770d; }
 .live-box .lb-pct.c-low  { color: #c0392b; }
 .live-box .lb-pct.c-none { color: #aaa; }
-.live-box .lb-bar-track { height: 8px; background: #eef; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.live-box .lb-bar-track { height: 5px; background: #eef; border-radius: 4px; overflow: hidden; margin-top: 3px; }
 .live-box .lb-bar-fill  { height: 100%; border-radius: 4px; transition: width .4s; }
 .live-box .lb-bar-fill.c-high { background: #27ae60; }
 .live-box .lb-bar-fill.c-mid  { background: #f39c12; }
 .live-box .lb-bar-fill.c-low  { background: #e74c3c; }
-.live-box .lb-names { font-size: 11px; color: #555; margin-top: 4px; line-height: 1.5; }
+.live-box .lb-names { font-size: 10px; color: #555; margin-top: 2px; line-height: 1.4; }
 
 /* Export */
 .export-bar { margin: 0 20px 10px; display: flex; gap: 8px; }
@@ -245,6 +265,9 @@ td.col-status.auto-off input { color: #bbb; }
 .hour-block.present { background: #a9dfbf; }
 .hour-block.pn1     { background: linear-gradient(to right, #d5d8dc 50%, #a9dfbf 50%); }
 .hour-block.pn2     { background: linear-gradient(to right, #a9dfbf 50%, #d5d8dc 50%); }
+.hour-block.pto1    { background: linear-gradient(to right, #d5d8dc 50%, #a9dfbf 50%); }
+.hour-block.pto2    { background: linear-gradient(to right, #a9dfbf 50%, #d5d8dc 50%); }
+.hour-block.hol     { background: #a8dadc; }
 .hour-block.absent  { background: #f1948a; }
 .hour-block.off     { background: #ececec; }
 .hour-block.outside { background: #f8f8f8; }
@@ -342,6 +365,9 @@ td.col-status.auto-off input { color: #bbb; }
 .rrl-res-badge.present { background: #a9dfbf; color: #1e6b3a; }
 .rrl-res-badge.pn1     { background: linear-gradient(to right,#d5d8dc 50%,#a9dfbf 50%); color: #1e6b3a; }
 .rrl-res-badge.pn2     { background: linear-gradient(to right,#a9dfbf 50%,#d5d8dc 50%); color: #1e6b3a; }
+.rrl-res-badge.pto1    { background: linear-gradient(to right,#d5d8dc 50%,#a9dfbf 50%); color: #1e6b3a; }
+.rrl-res-badge.pto2    { background: linear-gradient(to right,#a9dfbf 50%,#d5d8dc 50%); color: #1e6b3a; }
+.rrl-res-badge.hol     { background: #a8dadc; color: #1a6e72; }
 .rrl-empty { padding: 10px; font-size: 12px; color: #999; text-align: center; border: 1px solid #c5cfe0; border-radius: 4px; background: #fff; }
 
 
@@ -363,6 +389,27 @@ tbody tr:active td { background: #c8daf5 !important; }
 .modal input, .modal select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
 .modal input:disabled, .modal select:disabled { background: #f0f2f5; color: #999; cursor: not-allowed; border-color: #ddd; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* Manage Resources modal */
+#manageModal { width: 860px; max-width: 97vw; max-height: 90vh; overflow-y: auto; padding: 0; }
+#manageModal .mm-header {
+  background: #1a3c5e; color: #fff; padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 1;
+}
+#manageModal .mm-header h3 { font-size: 15px; margin: 0; }
+#manageModal .mm-tabs {
+  display: flex; border-bottom: 2px solid #e0e6ef; background: #f8faff;
+  padding: 0 20px; gap: 4px;
+}
+#manageModal .mm-tab {
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; background: transparent; color: #666; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; transition: color .15s;
+}
+#manageModal .mm-tab.active { color: #1a3c5e; border-bottom-color: #1a3c5e; }
+#manageModal .mm-tab:hover:not(.active) { color: #1a3c5e; }
+#manageModal .mm-body { padding: 20px; }
 
 .chip button.btn-edit { background: #2980b9; color: #fff; border-radius: 50%; padding: 0; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; }
 .btn-light.filter-active { background: #2980b9; color: #fff; border-color: #2471a3; }
@@ -401,13 +448,16 @@ tbody tr:active td { background: #c8daf5 !important; }
   <button class="btn-light" onclick="exportCSV()">Export CSV</button>
   <button class="btn-light" onclick="exportData()">⬇ Export Data</button>
   <label class="btn-light" style="cursor:pointer;margin:0;padding:6px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center">⬆ Import Data<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+  <button class="btn-light" onclick="syncPullSilent()" title="Pull latest data from cloud" style="border-color:#2980b9;color:#2980b9;padding:6px 10px">⟳</button>
   <button class="btn-light" onclick="toggleSyncPanel()" id="syncPanelBtn" style="border-color:#27ae60;color:#27ae60">☁ Cloud Sync</button>
   <button class="btn-light" onclick="clearMonthData()">Clear This Month</button>
   <button class="btn-danger" onclick="clearAll()">Reset All Data</button>
 </div>
 
 <!-- Cloud Sync Panel -->
-<div id="syncPanel" style="display:none;background:#fff;border-bottom:2px solid #27ae60;padding:14px 20px;position:sticky;top:45px;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+<div id="syncPanel" style="display:none;background:#fff;border-bottom:2px solid #27ae60;position:sticky;top:0;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+  <div style="position:relative;padding:14px 20px">
+  <button onclick="toggleSyncPanel()" title="Close" style="position:absolute;top:10px;right:14px;background:#e74c3c;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:22px;height:22px;border-radius:50%;line-height:22px;text-align:center;padding:0;z-index:1">✕</button>
   <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
     <div style="flex:1;min-width:280px">
       <div style="font-size:12px;font-weight:700;color:#1a3c5e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Google Sheets Sync</div>
@@ -451,11 +501,14 @@ tbody tr:active td { background: #c8daf5 !important; }
       <span id="gasCopyMsg" style="color:#27ae60;margin-left:6px;display:none">Copied!</span>
     </div>
   </div>
+  </div>
 </div>
 
 <!-- Advanced Filter Panel -->
-<div id="advFilterPanel" style="display:none;background:#fff;border-bottom:2px solid #c5cfe0;padding:14px 20px;position:sticky;top:45px;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+<div id="advFilterPanel" style="display:none;background:#fff;border-bottom:2px solid #c5cfe0;position:sticky;top:0;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
+  <div style="position:relative;padding:14px 20px">
+  <button onclick="toggleAdvancedFilter()" title="Close" style="position:absolute;top:10px;right:14px;background:#e74c3c;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:22px;height:22px;border-radius:50%;line-height:22px;text-align:center;padding:0;z-index:1">✕</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-right:32px">
     <span style="font-size:12px;font-weight:700;color:#1a3c5e;text-transform:uppercase;letter-spacing:.4px">Advanced Filters <span style="font-weight:400;color:#888;font-size:11px">(any condition matches)</span></span>
     <div style="display:flex;gap:8px">
       <button class="btn-success" style="font-size:11px;padding:4px 10px" onclick="addFilterRow()">+ Add Filter</button>
@@ -465,100 +518,125 @@ tbody tr:active td { background: #c8daf5 !important; }
   </div>
   <div id="af_rows" style="display:flex;flex-direction:column;gap:6px"></div>
   <div id="af_summary" style="margin-top:10px;font-size:11px;color:#2980b9;font-weight:600;display:none"></div>
+  </div>
 </div>
 
-<div id="resourcePanel" class="resource-panel" style="display:none">
-  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
-
-    <!-- Left: Shift Configurations -->
-    <div style="flex:0 0 300px;min-width:240px">
-      <h2 style="margin-bottom:10px">Shift Configurations</h2>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
-        <label style="font-size:11px;color:#555">Label
-          <input type="text" id="shiftLabel" placeholder="e.g. US Morning" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-        </label>
-        <div style="display:flex;gap:8px">
-          <label style="font-size:11px;color:#555;flex:1">Start
-            <input type="time" id="shiftCfgStart" value="08:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <label style="font-size:11px;color:#555;flex:1">End
-            <input type="time" id="shiftCfgEnd" value="17:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-        </div>
-        <label style="font-size:11px;color:#555">Timezone
-          <select id="shiftCfgTZ" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
-        </label>
-        <button class="btn-success" onclick="addShiftConfig()" style="margin-top:4px">+ Add Shift</button>
-      </div>
-      <div id="shiftConfigList" style="display:flex;flex-direction:column;gap:6px"></div>
+<!-- Manage Resources Modal -->
+<div class="modal-overlay" id="manageOverlay">
+  <div class="modal" id="manageModal">
+    <div class="mm-header">
+      <h3>Manage Resources</h3>
+      <button onclick="closeManageModal()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:0">✕</button>
     </div>
+    <div class="mm-tabs">
+      <button class="mm-tab active" onclick="switchManageTab('resources',this)">👥 Resources</button>
+      <button class="mm-tab" onclick="switchManageTab('shifts',this)">⏰ Shifts</button>
+      <button class="mm-tab" onclick="switchManageTab('locations',this)">📍 Locations</button>
+    </div>
+    <div class="mm-body">
 
-    <!-- Divider -->
-    <div style="width:1px;background:#dde;align-self:stretch;margin:0 4px"></div>
-
-    <!-- Right: Resources -->
-    <div style="flex:1;min-width:280px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <h2>Resources</h2>
-        <button class="btn-success" onclick="showAddResourceRow()">+ Add Resource</button>
-      </div>
-
-      <!-- Add resource inline row (hidden by default) -->
-      <div id="addResourceRow" style="display:none;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-bottom:10px;display:none">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <label style="font-size:11px;color:#555">Name
-            <input type="text" id="newName" placeholder="e.g. TJ" style="width:120px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <label style="font-size:11px;color:#555">Shift
-            <select id="newShiftPreset" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
-              <option value="">— manual —</option>
-            </select>
-          </label>
-          <label style="font-size:11px;color:#555">Start
-            <input type="time" id="newShiftStart" value="08:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <label style="font-size:11px;color:#555">End
-            <input type="time" id="newShiftEnd" value="17:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <label style="font-size:11px;color:#555">Timezone
-            <select id="newTZ" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
-          </label>
-          <label style="font-size:11px;color:#555">Days Off
-            <select id="newOffDays" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
-              <option value="frisat">Fri–Sat</option>
-              <option value="satsun">Sat–Sun</option>
-              <option value="sunmon">Sun–Mon</option>
-              <option value="montuew">Mon–Tue</option>
-              <option value="thuefri">Thu–Fri</option>
-              <option value="none">No fixed off</option>
-              <option value="custom">Custom…</option>
-            </select>
-          </label>
-          <label id="customOffLabel" style="display:none;font-size:11px;color:#555">Custom
-            <input type="text" id="customOff" placeholder="sat,sun" style="width:80px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <div style="display:flex;gap:6px;padding-bottom:1px">
-            <button class="btn-success" onclick="addResource()">Save</button>
-            <button class="btn-light" onclick="hideAddResourceRow()">Cancel</button>
+      <!-- Tab: Resources -->
+      <div id="mmTab-resources">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:13px;font-weight:700;color:#1a3c5e">Team Members</span>
+          <button class="btn-success" onclick="showAddResourceRow()">+ Add Resource</button>
+        </div>
+        <div id="addResourceRow" style="display:none;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <label style="font-size:11px;color:#555">Name
+              <input type="text" id="newName" placeholder="e.g. TJ" style="width:120px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+            <label style="font-size:11px;color:#555">Shift
+              <select id="newShiftPreset" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
+                <option value="">— manual —</option>
+              </select>
+            </label>
+            <label style="font-size:11px;color:#555">Start
+              <input type="time" id="newShiftStart" value="08:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+            <label style="font-size:11px;color:#555">End
+              <input type="time" id="newShiftEnd" value="17:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+            <label style="font-size:11px;color:#555">Timezone
+              <select id="newTZ" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
+            </label>
+            <label style="font-size:11px;color:#555">Days Off
+              <select id="newOffDays" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
+                <option value="frisat">Fri–Sat</option>
+                <option value="satsun">Sat–Sun</option>
+                <option value="sunmon">Sun–Mon</option>
+                <option value="montuew">Mon–Tue</option>
+                <option value="thuefri">Thu–Fri</option>
+                <option value="none">No fixed off</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </label>
+            <label id="customOffLabel" style="display:none;font-size:11px;color:#555">Custom
+              <input type="text" id="customOff" placeholder="sat,sun" style="width:80px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+            <label style="font-size:11px;color:#555">Location
+              <select id="newLocation" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
+                <option value="">— none —</option>
+              </select>
+            </label>
+            <div style="display:flex;gap:6px;padding-bottom:1px">
+              <button class="btn-success" onclick="addResource()">Save</button>
+              <button class="btn-light" onclick="hideAddResourceRow()">Cancel</button>
+            </div>
           </div>
         </div>
+        <table id="resourceListTable" style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#1a3c5e;color:#fff;text-align:left">
+              <th style="padding:7px 10px;border:1px solid #0d2438">Name</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438">Shift</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438">Time</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438">In View TZ</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438">Days Off</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438">Location</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;width:70px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="resourceListBody"></tbody>
+        </table>
+        <div id="resourceEmptyMsg" style="display:none;color:#999;font-size:12px;padding:12px 0">No resources added yet.</div>
       </div>
 
-      <!-- Resource list table -->
-      <table id="resourceListTable" style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead>
-          <tr style="background:#1a3c5e;color:#fff;text-align:left">
-            <th style="padding:7px 10px;border:1px solid #0d2438">Name</th>
-            <th style="padding:7px 10px;border:1px solid #0d2438">Shift</th>
-            <th style="padding:7px 10px;border:1px solid #0d2438">Time</th>
-            <th style="padding:7px 10px;border:1px solid #0d2438">In View TZ</th>
-            <th style="padding:7px 10px;border:1px solid #0d2438">Days Off</th>
-            <th style="padding:7px 10px;border:1px solid #0d2438;width:70px">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="resourceListBody"></tbody>
-      </table>
-      <div id="resourceEmptyMsg" style="display:none;color:#999;font-size:12px;padding:12px 0">No resources added yet.</div>
+      <!-- Tab: Shifts -->
+      <div id="mmTab-shifts" style="display:none">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-width:360px">
+          <span style="font-size:13px;font-weight:700;color:#1a3c5e;margin-bottom:4px">Add Shift Configuration</span>
+          <label style="font-size:11px;color:#555">Label
+            <input type="text" id="shiftLabel" placeholder="e.g. US Morning" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+          </label>
+          <div style="display:flex;gap:8px">
+            <label style="font-size:11px;color:#555;flex:1">Start
+              <input type="time" id="shiftCfgStart" value="08:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+            <label style="font-size:11px;color:#555;flex:1">End
+              <input type="time" id="shiftCfgEnd" value="17:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+            </label>
+          </div>
+          <label style="font-size:11px;color:#555">Timezone
+            <select id="shiftCfgTZ" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
+          </label>
+          <button class="btn-success" onclick="addShiftConfig()" style="margin-top:4px;align-self:flex-start">+ Add Shift</button>
+        </div>
+        <div id="shiftConfigList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <!-- Tab: Locations -->
+      <div id="mmTab-locations" style="display:none">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-width:320px">
+          <span style="font-size:13px;font-weight:700;color:#1a3c5e;margin-bottom:4px">Add Location</span>
+          <label style="font-size:11px;color:#555">Name
+            <input type="text" id="locationLabel" placeholder="e.g. Manila" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+          </label>
+          <button class="btn-success" onclick="addLocation()" style="align-self:flex-start">+ Add Location</button>
+        </div>
+        <div id="locationList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -572,6 +650,9 @@ tbody tr:active td { background: #c8daf5 !important; }
   <span class="legend-item"><span class="legend-swatch" style="background:#27ae60"></span> Blank = Present</span>
   <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(to right,#d5d8dc 50%,#a9dfbf 50%)"></span> PN1 = Off 1st half</span>
   <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(to right,#a9dfbf 50%,#d5d8dc 50%)"></span> PN2 = Off 2nd half</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(to right,#d5d8dc 50%,#a9dfbf 50%)"></span> PTO1 = PTO 1st half</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:linear-gradient(to right,#a9dfbf 50%,#d5d8dc 50%)"></span> PTO2 = PTO 2nd half</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#a8dadc"></span> HOL = Holiday (full day)</span>
   <span class="legend-item"><span class="legend-swatch" style="background:#fadbd8"></span> Any code = Leave/Absent</span>
   <span class="legend-item"><span class="legend-swatch" style="background:#ececec"></span> OFF = Rest day (auto)</span>
 </div>
@@ -666,6 +747,15 @@ tbody tr:active td { background: #c8daf5 !important; }
       </label>
     </div>
 
+    <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Location</div>
+      <label>Location
+        <select id="editLocation">
+          <option value="">— none —</option>
+        </select>
+      </label>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-light" onclick="closeEditModal()">Cancel</button>
       <button class="btn-success" onclick="saveEditResource()">Save</button>
@@ -678,6 +768,8 @@ tbody tr:active td { background: #c8daf5 !important; }
 const LS_RESOURCES    = 'sct_resources';
 const LS_DATA         = 'sct_data';
 const LS_SHIFT_CFGS   = 'sct_shift_cfgs';
+const LS_LOCATIONS    = 'sct_locations';
+const LS_HOLIDAYS     = 'sct_holidays';
 
 function loadResources() {
   try { return JSON.parse(localStorage.getItem(LS_RESOURCES)) || []; } catch { return []; }
@@ -688,6 +780,16 @@ function loadShiftConfigs() {
   try { return JSON.parse(localStorage.getItem(LS_SHIFT_CFGS)) || []; } catch { return []; }
 }
 function saveShiftConfigs(s) { localStorage.setItem(LS_SHIFT_CFGS, JSON.stringify(s)); autoSyncPushIfEnabled(); }
+
+function loadLocations() {
+  try { return JSON.parse(localStorage.getItem(LS_LOCATIONS)) || []; } catch { return []; }
+}
+function saveLocations(l) { localStorage.setItem(LS_LOCATIONS, JSON.stringify(l)); autoSyncPushIfEnabled(); }
+
+function loadHolidays() {
+  try { return JSON.parse(localStorage.getItem(LS_HOLIDAYS)) || {}; } catch { return {}; }
+}
+function saveHolidays(h) { localStorage.setItem(LS_HOLIDAYS, JSON.stringify(h)); autoSyncPushIfEnabled(); }
 
 function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_DATA)) || {}; } catch { return {}; }
@@ -887,6 +989,7 @@ function toggleAdvancedFilter() {
   panel.style.display = open ? 'block' : 'none';
   document.getElementById('advFilterBtn').classList.toggle('filter-active', open);
   if (open && _filterRows.length === 0) addFilterRow();
+  requestAnimationFrame(() => { updateStickyTops(); });
 }
 
 function addFilterRow() {
@@ -1100,6 +1203,8 @@ function filteredResources() {
 let resources   = loadResources();
 let allData     = loadData();
 let shiftConfigs = loadShiftConfigs();
+let locations    = loadLocations();
+let holidays     = loadHolidays();
 
 function currentMonth() { return document.getElementById('monthPicker').value; }
 
@@ -1171,9 +1276,12 @@ function buildResData(day, dayName) {
     const end   = convertShiftHour(parseTime(res.shiftEnd),   res.tz);
     let statusClass = 'off';
     if (!isOff) {
-      if (status === '')         statusClass = 'present';
+      if (status === '')          statusClass = 'present';
       else if (status === 'PN1') statusClass = 'pn1';
       else if (status === 'PN2') statusClass = 'pn2';
+      else if (status === 'PTO1') statusClass = 'pto1';
+      else if (status === 'PTO2') statusClass = 'pto2';
+      else if (status === 'HOL') statusClass = 'hol';
       else                       statusClass = 'absent';
     }
     return { res, isOff, status, start, end, statusClass };
@@ -1190,14 +1298,14 @@ function computeHourCoverage(h, resData) {
     const mid = shiftMidHour(d.start, d.end);
     const inSecond = inShift(h, mid, d.end);
     if (d.statusClass === 'present') working += 1;
-    else if (d.statusClass === 'pn1') working += inSecond ? 1 : 0;
-    else if (d.statusClass === 'pn2') working += inSecond ? 0 : 1;
+    else if (['pn1','pto1'].includes(d.statusClass)) working += inSecond ? 1 : 0;
+    else if (['pn2','pto2'].includes(d.statusClass)) working += inSecond ? 0 : 1;
   });
   return total === 0 ? null : working / total;
 }
 
 // ── Coverage calculation — what fraction of the team is available today ──
-// present=100%, PN1/PN2=50%, any other code=0%, off-day excluded
+// present=100%, PN1/PN2/PTO1/PTO2=50%, HOL/any other code=0%, off-day excluded
 function calcCoverage(day, dayName) {
   if (resources.length === 0) return null;
   const resData = buildResData(day, dayName);
@@ -1206,7 +1314,7 @@ function calcCoverage(day, dayName) {
   let working = 0;
   nonOff.forEach(d => {
     if (d.statusClass === 'present') working += 1;
-    else if (d.statusClass === 'pn1' || d.statusClass === 'pn2') working += 0.5;
+    else if (['pn1','pn2','pto1','pto2'].includes(d.statusClass)) working += 0.5;
   });
   return Math.round((working / nonOff.length) * 100);
 }
@@ -1216,8 +1324,10 @@ function renderChips() { renderResourcePanel(); }
 
 function renderResourcePanel() {
   renderShiftConfigList();
+  renderLocationList();
   renderResourceList();
   populateShiftPresetDropdown();
+  populateLocationDropdowns();
 }
 
 function renderShiftConfigList() {
@@ -1268,6 +1378,7 @@ function renderResourceList() {
       <td style="padding:7px 10px;border:1px solid #dde">${shiftStr}${res.tz ? `<br><span style="font-size:10px;color:#888">${res.tz.split('/').pop().replace(/_/g,' ')}</span>` : ''}</td>
       <td style="padding:7px 10px;border:1px solid #dde;color:#2980b9;font-weight:600">${formatShiftInViewTZ(res) || '—'}</td>
       <td style="padding:7px 10px;border:1px solid #dde">${offLabel(res)}</td>
+      <td style="padding:7px 10px;border:1px solid #dde;color:#555">${res.location || '—'}</td>
       <td style="padding:7px 10px;border:1px solid #dde;text-align:center">
         <button class="btn-light" style="padding:3px 8px;font-size:11px;margin-right:4px" onclick="openEditModal(${i})">Edit</button>
         <button class="btn-danger" style="padding:3px 8px;font-size:11px" onclick="removeResource(${i})">✕</button>
@@ -1346,6 +1457,231 @@ function saveEditShiftConfig() {
   renderGrid();
 }
 
+// ── Location management ───────────────────────────────────────────
+
+// Hardcoded holidays for countries not in Nager.Date (e.g. India)
+const CUSTOM_COUNTRY_HOLIDAYS = {
+  IN: {
+    name: 'India',
+    holidays: {
+      2024: ['2024-01-26','2024-03-25','2024-03-29','2024-04-14','2024-04-17','2024-04-21',
+             '2024-05-23','2024-06-17','2024-07-17','2024-08-15','2024-10-02','2024-10-12',
+             '2024-10-13','2024-10-24','2024-11-01','2024-11-15','2024-12-25'],
+      2025: ['2025-01-26','2025-03-14','2025-03-31','2025-04-10','2025-04-14','2025-04-18',
+             '2025-05-12','2025-06-07','2025-07-06','2025-08-15','2025-08-16','2025-10-02',
+             '2025-10-02','2025-10-20','2025-10-21','2025-11-05','2025-12-25'],
+      2026: ['2026-01-26','2026-03-03','2026-03-20','2026-04-02','2026-04-03','2026-04-14',
+             '2026-05-01','2026-05-27','2026-06-27','2026-07-26','2026-08-15','2026-10-02',
+             '2026-10-09','2026-10-10','2026-10-25','2026-11-14','2026-12-25'],
+      2027: ['2027-01-26','2027-02-20','2027-03-09','2027-03-22','2027-03-26','2027-04-14',
+             '2027-04-17','2027-05-16','2027-06-16','2027-07-15','2027-08-15','2027-10-02',
+             '2027-10-28','2027-10-29','2027-11-04','2027-11-03','2027-12-25'],
+    }
+  }
+};
+
+let _nagerCountries = null;
+let _locCountryState = {}; // { [loc]: { country, year } } — persists across re-renders
+
+function saveLocCountryState() {
+  locations.forEach((loc, i) => {
+    const inp = document.getElementById(`holCountry_${i}`);
+    const yr  = document.getElementById(`holYear_${i}`);
+    if (inp) _locCountryState[loc] = {
+      country: inp.value,
+      year: yr ? yr.value : new Date().getFullYear()
+    };
+  });
+}
+
+function restoreLocCountryState() {
+  locations.forEach((loc, i) => {
+    const state = _locCountryState[loc];
+    if (!state) return;
+    const inp = document.getElementById(`holCountry_${i}`);
+    const yr  = document.getElementById(`holYear_${i}`);
+    if (inp && state.country) inp.value = state.country;
+    if (yr  && state.year)    yr.value  = state.year;
+  });
+}
+
+async function fetchNagerCountries() {
+  if (_nagerCountries) return _nagerCountries;
+  try {
+    const res = await fetch('https://date.nager.at/api/v3/AvailableCountries');
+    _nagerCountries = await res.json();
+  } catch { _nagerCountries = []; }
+  // Append custom countries not in Nager
+  Object.entries(CUSTOM_COUNTRY_HOLIDAYS).forEach(([code, data]) => {
+    if (!_nagerCountries.find(c => c.countryCode === code)) {
+      _nagerCountries.push({ countryCode: code, name: data.name });
+    }
+  });
+  _nagerCountries.sort((a, b) => a.name.localeCompare(b.name));
+  return _nagerCountries;
+}
+
+function getCountryCode(i) {
+  const val = (document.getElementById(`holCountry_${i}`)?.value || '').trim();
+  // datalist options are "Name (CC)" — extract CC from parentheses
+  const m = val.match(/\(([A-Z]{2})\)$/);
+  if (m) return m[1];
+  // fallback: treat raw 2-letter input as code
+  if (/^[A-Za-z]{2}$/.test(val)) return val.toUpperCase();
+  return null;
+}
+
+async function autoFetchHolidays(loc, i) {
+  const countryCode = getCountryCode(i);
+  const year        = document.getElementById(`holYear_${i}`).value;
+  const btn         = document.getElementById(`holFetchBtn_${i}`);
+  if (!countryCode || !year) { alert('Select a country and year.'); return; }
+  const prevText = btn.textContent;
+  btn.textContent = '⏳'; btn.disabled = true;
+  try {
+    let data;
+    const custom = CUSTOM_COUNTRY_HOLIDAYS[countryCode];
+    if (custom) {
+      const yearHols = custom.holidays[Number(year)] || [];
+      data = yearHols.map(d => ({ date: d }));
+    } else {
+      const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
+      data = await res.json();
+    }
+    if (!Array.isArray(data)) throw new Error();
+    if (!holidays[loc]) holidays[loc] = [];
+    const existing = new Set(holidays[loc]);
+    data.forEach(h => existing.add(h.date));
+    holidays[loc] = [...existing].sort();
+    saveHolidays(holidays);
+    saveLocCountryState();
+    renderLocationList();
+    restoreLocCountryState();
+  } catch {
+    alert('Failed to fetch holidays. Check your connection.');
+    btn.textContent = prevText; btn.disabled = false;
+  }
+}
+
+function renderLocationList() {
+  const el = document.getElementById('locationList');
+  if (!el) return;
+  saveLocCountryState();
+  const curYear = new Date().getFullYear();
+  const yearOpts = [curYear - 1, curYear, curYear + 1].map(y => `<option value="${y}"${y===curYear?' selected':''}>${y}</option>`).join('');
+  if (locations.length === 0) {
+    el.innerHTML = '<div style="color:#999;font-size:11px;padding:4px 0">No locations added yet.</div>';
+  } else {
+    el.innerHTML = locations.map((loc, i) => {
+      const hols = (holidays[loc] || []).slice().sort();
+      const holTags = hols.map(d => `<span style="display:inline-flex;align-items:center;gap:3px;background:#a8dadc;border-radius:3px;padding:1px 5px;font-size:10px;color:#1a6e72;margin:1px">${d}<button onclick="removeHoliday('${loc}','${d}')" style="background:none;border:none;color:#1a6e72;cursor:pointer;padding:0;font-size:10px;line-height:1">✕</button></span>`).join('');
+      return `<div style="background:#f4f7fc;border:1px solid #c5cfe0;border-radius:5px;padding:7px 10px;font-size:12px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-weight:600">${loc}</span>
+          <button class="btn-danger" style="padding:2px 6px;font-size:11px" onclick="removeLocation(${i})">✕</button>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+          <input id="holCountry_${i}" list="holCountryDL_${i}" placeholder="Search country…" style="padding:2px 4px;border:1px solid #ccc;border-radius:3px;font-size:11px;width:160px" autocomplete="off" />
+          <datalist id="holCountryDL_${i}"></datalist>
+          <select id="holYear_${i}" style="padding:2px 4px;border:1px solid #ccc;border-radius:3px;font-size:11px;width:62px">${yearOpts}</select>
+          <button id="holFetchBtn_${i}" class="btn-success" style="padding:2px 6px;font-size:11px" onclick="autoFetchHolidays('${loc}',${i})">⬇ Auto-fill</button>
+          <span style="color:#777;font-size:10px">or</span>
+          <input type="date" id="holDate_${i}" style="padding:2px 4px;border:1px solid #ccc;border-radius:3px;font-size:11px" />
+          <button class="btn-light" style="padding:2px 6px;font-size:11px" onclick="addHoliday('${loc}',${i})">+ Add</button>
+        </div>
+        ${hols.length ? `<div style="display:flex;flex-wrap:wrap;gap:2px">${holTags}</div>` : '<span style="font-size:10px;color:#aaa">No holidays added yet.</span>'}
+      </div>`;
+    }).join('');
+    // Populate country datalists asynchronously, then restore saved state
+    fetchNagerCountries().then(countries => {
+      locations.forEach((loc, i) => {
+        const dl = document.getElementById(`holCountryDL_${i}`);
+        if (!dl || dl.options.length > 0) return;
+        countries.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = `${c.name} (${c.countryCode})`;
+          dl.appendChild(opt);
+        });
+      });
+      restoreLocCountryState();
+    });
+    restoreLocCountryState(); // restore immediately for year select
+  }
+  populateLocationDropdowns();
+}
+
+function addHoliday(loc, idx) {
+  const val = document.getElementById(`holDate_${idx}`).value;
+  if (!val) { alert('Pick a date.'); return; }
+  if (!holidays[loc]) holidays[loc] = [];
+  if (!holidays[loc].includes(val)) {
+    holidays[loc].push(val);
+    holidays[loc].sort();
+    saveHolidays(holidays);
+  }
+  renderLocationList();
+}
+
+function removeHoliday(loc, date) {
+  if (!holidays[loc]) return;
+  holidays[loc] = holidays[loc].filter(d => d !== date);
+  saveHolidays(holidays);
+  renderLocationList();
+}
+
+function applyLocationHolidays(resName, resLocation) {
+  const ym = currentMonth();
+  if (!ym) return;
+  if (!resLocation) { alert('This resource has no location assigned.'); return; }
+  const hols = holidays[resLocation] || [];
+  if (hols.length === 0) { alert(`No holidays configured for location "${resLocation}".`); return; }
+  const [y, m] = ym.split('-').map(Number);
+  const days = daysInMonth(ym);
+  let applied = 0;
+  for (let day = 1; day <= days; day++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    if (hols.includes(dateStr)) {
+      setCell(day, resName, 'status', 'HOL');
+      applied++;
+    }
+  }
+  if (applied === 0) alert(`No holidays for "${resLocation}" fall in this month.`);
+  else { renderGrid(); renderLiveBar(); }
+}
+
+function addLocation() {
+  const label = document.getElementById('locationLabel').value.trim();
+  if (!label) { alert('Enter a location name.'); return; }
+  if (locations.includes(label)) { alert('Location already exists.'); return; }
+  locations.push(label);
+  saveLocations(locations);
+  document.getElementById('locationLabel').value = '';
+  renderLocationList();
+}
+
+function removeLocation(i) {
+  if (!confirm(`Remove location "${locations[i]}"?`)) return;
+  locations.splice(i, 1);
+  saveLocations(locations);
+  renderLocationList();
+}
+
+function populateLocationDropdowns() {
+  ['newLocation', 'editLocation'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— none —</option>';
+    locations.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc;
+      opt.textContent = loc;
+      sel.appendChild(opt);
+    });
+    if (cur && locations.includes(cur)) sel.value = cur;
+  });
+}
+
 // ── Add resource row toggle ───────────────────────────────────────
 function showAddResourceRow() {
   const row = document.getElementById('addResourceRow');
@@ -1393,7 +1729,10 @@ function renderGrid() {
     th.className = 'res-first';
     if (ri % 2 !== 0) th.style.background = '#1e4870';
     const shiftStr = formatShiftInViewTZ(res);
-    th.innerHTML = `<span>${res.name}</span>${shiftStr ? `<br><span style="font-size:10px;font-weight:normal;color:#aed6f1">⏰ ${shiftStr}</span>` : ''}`;
+    th.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;gap:5px">
+      <div><span>${res.name}</span>${shiftStr ? `<br><span style="font-size:10px;font-weight:normal;color:#aed6f1">⏰ ${shiftStr}</span>` : ''}</div>
+      ${res.location ? `<button title="Apply holidays for ${res.location}" onclick="applyLocationHolidays('${res.name.replace(/'/g,"\\'")}','${res.location.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:#a8dadc;border:none;border-radius:3px;cursor:pointer;font-size:11px;padding:1px 4px;color:#1a6e72;line-height:1;flex-shrink:0">🏖</button>` : ''}
+    </div>`;
     trTitle.appendChild(th);
   });
   thead.appendChild(trTitle);
@@ -1433,25 +1772,25 @@ function renderGrid() {
     const covPct = calcCoverage(day, dayName);
 
     const tr = document.createElement('tr');
-    tr.title = 'Click to see day breakdown';
-    tr.addEventListener('click', (e) => {
-      if (e.target.tagName === 'INPUT') return; // don't open when editing a cell
-      openDayModal(day);
-    });
 
     // Check if ALL visible resources are off today
     const allOff = visibleResources.every(r => isOffDay(r, dayName));
     if (allOff) tr.className = 'is-off';
 
+    const clickStyle = 'cursor:pointer;user-select:none';
     tr.innerHTML = `
-      <td class="col-day">${day}</td>
-      <td class="col-dayname">${dayName}</td>
-      <td class="col-date" style="font-size:11px">${date}</td>
+      <td class="col-day" title="Click to see day breakdown" style="${clickStyle}">${day}</td>
+      <td class="col-dayname" title="Click to see day breakdown" style="${clickStyle}">${dayName}</td>
+      <td class="col-date" title="Click to see day breakdown" style="font-size:11px;${clickStyle}">${date}</td>
     `;
+    tr.querySelectorAll('td').forEach(td => td.addEventListener('click', () => openDayModal(day)));
 
     // Coverage cell (always based on ALL resources, not just filtered)
     const covTd = document.createElement('td');
     covTd.className = 'col-cov';
+    covTd.title = 'Click to see day breakdown';
+    covTd.style.cursor = 'pointer';
+    covTd.addEventListener('click', () => openDayModal(day));
     if (covPct === null) {
       covTd.className += ' cov-none';
       covTd.textContent = '—';
@@ -1487,6 +1826,7 @@ function renderGrid() {
         inp.dataset.field = 'status';
         inp.addEventListener('change', onCellChange);
         inp.addEventListener('input', onCellInput);
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
         applyStatusStyle(td, inp.value);
         td.appendChild(inp);
       }
@@ -1499,14 +1839,18 @@ function renderGrid() {
   table.appendChild(tbody);
   container.innerHTML = '';
   container.appendChild(table);
+  requestAnimationFrame(() => { updateStickyTops(); });
 }
 
 function applyStatusStyle(td, val) {
-  td.classList.remove('status-working','status-pn1','status-pn2','status-leave');
+  td.classList.remove('status-working','status-pn1','status-pn2','status-pto1','status-pto2','status-hol','status-leave');
   const v = val.trim().toUpperCase();
-  if (v === '')     td.classList.add('status-working');
-  else if (v === 'PN1') td.classList.add('status-pn1');
-  else if (v === 'PN2') td.classList.add('status-pn2');
+  if      (v === '')      td.classList.add('status-working');
+  else if (v === 'PN1')  td.classList.add('status-pn1');
+  else if (v === 'PN2')  td.classList.add('status-pn2');
+  else if (v === 'PTO1') td.classList.add('status-pto1');
+  else if (v === 'PTO2') td.classList.add('status-pto2');
+  else if (v === 'HOL')  td.classList.add('status-hol');
   else td.classList.add('status-leave');
 }
 
@@ -1739,8 +2083,8 @@ function renderRangeResourceList(lo, hi, resData) {
       if (d.statusClass === 'present') return true;
       const mid = shiftMidHour(d.start, d.end);
       const inSecond = inShift(h, mid, d.end);
-      if (d.statusClass === 'pn1' && inSecond) return true;
-      if (d.statusClass === 'pn2' && !inSecond) return true;
+      if (['pn1','pto1'].includes(d.statusClass) && inSecond) return true;
+      if (['pn2','pto2'].includes(d.statusClass) && !inSecond) return true;
     }
     return false;
   }
@@ -1784,8 +2128,8 @@ function renderRangeResourceList(lo, hi, resData) {
         if (d.statusClass === 'present') { gWork++; continue; }
         const mid = shiftMidHour(d.start, d.end);
         const inSecond = inShift(h, mid, d.end);
-        if (d.statusClass === 'pn1' && inSecond) gWork++;
-        else if (d.statusClass === 'pn2' && !inSecond) gWork++;
+        if (['pn1','pto1'].includes(d.statusClass) && inSecond) gWork++;
+        else if (['pn2','pto2'].includes(d.statusClass) && !inSecond) gWork++;
       }
     });
     const gPct = gTotal ? Math.round((gWork / gTotal) * 100) : null;
@@ -1799,12 +2143,12 @@ function renderRangeResourceList(lo, hi, resData) {
 
     // Sort members: present first, then pn1/pn2
     const sorted = [...g.members].sort((a, b) => {
-      const order = { present: 0, pn2: 1, pn1: 2 };
+      const order = { present: 0, pn2: 1, pto2: 2, pn1: 3, pto1: 4, hol: 5 };
       return (order[a.statusClass] ?? 9) - (order[b.statusClass] ?? 9);
     });
 
     sorted.forEach(d => {
-      const badgeLabels = { present: 'Present', pn1: 'PN1', pn2: 'PN2' };
+      const badgeLabels = { present: 'Present', pn1: 'PN1', pn2: 'PN2', pto1: 'PTO1', pto2: 'PTO2', hol: 'HOL' };
       const _sf = formatShiftInViewTZ(d.res);
       const shiftStr = _sf ? `⏰ ${_sf}` : '';
       html += `<div class="rrl-resource-row">
@@ -1934,11 +2278,11 @@ function buildDayView(day, dayName, covPct) {
       if (d.isOff) {
         blockClass = 'off';
       } else if (inShift(h, d.start, d.end)) {
-        if (d.statusClass === 'pn1' || d.statusClass === 'pn2') {
+        if (['pn1','pn2','pto1','pto2'].includes(d.statusClass)) {
           const mid = shiftMidHour(d.start, d.end);
           const inSecond = inShift(h, mid, d.end);
-          if (d.statusClass === 'pn1') blockClass = inSecond ? 'present' : 'off';
-          else blockClass = inSecond ? 'off' : 'present';
+          if (['pn1','pto1'].includes(d.statusClass)) blockClass = inSecond ? 'present' : d.statusClass;
+          else blockClass = inSecond ? d.statusClass : 'present';
         } else {
           blockClass = d.statusClass;
         }
@@ -1947,7 +2291,7 @@ function buildDayView(day, dayName, covPct) {
       } else {
         blockClass = d.statusClass;
       }
-      const titles = { present:'Present', pn1:'PN1 – off 1st half, present 2nd half', pn2:'PN2 – present 1st half, off 2nd half', absent: d.status || 'Leave', off:'Rest / Off half', outside:'Outside shift' };
+      const titles = { present:'Present', pn1:'PN1 – off 1st half, present 2nd half', pn2:'PN2 – present 1st half, off 2nd half', pto1:'PTO1 – PTO 1st half, present 2nd half', pto2:'PTO2 – present 1st half, PTO 2nd half', hol:'HOL – Holiday (full day off)', absent: d.status || 'Leave', off:'Rest / Off half', outside:'Outside shift' };
       html += `<td data-hour="${h}" title="${titles[blockClass] || blockClass}"><span class="hour-block ${blockClass}"></span></td>`;
     });
     html += `</tr>`;
@@ -1999,11 +2343,13 @@ function addResource() {
     tz         = document.getElementById('newTZ').value;
     shiftLabel = '';
   }
-  resources.push({ name, offPreset: preset, offCustom: custom, shiftStart, shiftEnd, tz, shiftLabel });
+  const location = document.getElementById('newLocation').value;
+  resources.push({ name, offPreset: preset, offCustom: custom, shiftStart, shiftEnd, tz, shiftLabel, location });
   saveResources(resources);
   document.getElementById('newName').value = '';
   document.getElementById('customOff').value = '';
   document.getElementById('newShiftPreset').value = '';
+  document.getElementById('newLocation').value = '';
   hideAddResourceRow();
   renderChips();
   renderGrid();
@@ -2051,6 +2397,8 @@ function openEditModal(i) {
   document.getElementById('editTZ').disabled         = isPreset;
   document.getElementById('editCustomOffLabel').style.display =
     res.offPreset === 'custom' ? 'flex' : 'none';
+  populateLocationDropdowns();
+  document.getElementById('editLocation').value = res.location || '';
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -2090,6 +2438,7 @@ function saveEditResource() {
     offPreset:  document.getElementById('editOffDays').value,
     offCustom:  document.getElementById('editCustomOff').value.trim(),
     shiftStart, shiftEnd, tz, shiftLabel,
+    location:   document.getElementById('editLocation').value,
   };
 
   // If name changed, migrate all stored cell data to the new name
@@ -2144,13 +2493,45 @@ document.getElementById('editModal').addEventListener('click', function(e) {
 document.getElementById('editShiftModal').addEventListener('click', function(e) {
   if (e.target === this) closeEditShiftModal();
 });
+document.getElementById('manageOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeManageModal();
+});
 
 // ── Panel toggle ─────────────────────────────────────────────────
 function showPanel(id) {
+  if (id === 'resourcePanel') { openManageModal('resources'); return; }
   const el = document.getElementById(id);
   const opening = el.style.display === 'none' || el.style.display === '';
   el.style.display = opening ? 'block' : 'none';
-  if (opening && id === 'resourcePanel') renderResourcePanel();
+  requestAnimationFrame(() => updateStickyTops());
+}
+
+let _manageActiveTab = 'resources';
+
+function openManageModal(tab) {
+  _manageActiveTab = tab || 'resources';
+  document.getElementById('manageOverlay').classList.add('open');
+  renderResourcePanel();
+  switchManageTab(_manageActiveTab, null);
+}
+
+function closeManageModal() {
+  document.getElementById('manageOverlay').classList.remove('open');
+}
+
+function switchManageTab(tab, btnEl) {
+  _manageActiveTab = tab;
+  ['resources','shifts','locations'].forEach(t => {
+    const pane = document.getElementById(`mmTab-${t}`);
+    if (pane) pane.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#manageModal .mm-tab').forEach(b => b.classList.remove('active'));
+  if (btnEl) { btnEl.classList.add('active'); }
+  else {
+    const tabs = document.querySelectorAll('#manageModal .mm-tab');
+    const idx = ['resources','shifts','locations'].indexOf(tab);
+    if (tabs[idx]) tabs[idx].classList.add('active');
+  }
 }
 
 // ── Export CSV ───────────────────────────────────────────────────
@@ -2187,6 +2568,8 @@ function exportData() {
     exportedAt: new Date().toISOString(),
     resources:    loadResources(),
     shiftConfigs: loadShiftConfigs(),
+    locations:    loadLocations(),
+    holidays:     loadHolidays(),
     data:         loadData(),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2207,9 +2590,13 @@ function importData(event) {
       if (!confirm(`Import data from "${file.name}"?\n\nThis will REPLACE all current resources, shift configs, and status data.`)) return;
       saveResources(payload.resources   || []);
       saveShiftConfigs(payload.shiftConfigs || []);
+      saveLocations(payload.locations || []);
+      saveHolidays(payload.holidays || {});
       saveData(payload.data || {});
       resources    = loadResources();
       shiftConfigs = loadShiftConfigs();
+      locations    = loadLocations();
+      holidays     = loadHolidays();
       allData      = loadData();
       // Reset month picker to first month with data, or today
       const months = Object.keys(payload.data || {}).sort();
@@ -2301,9 +2688,13 @@ async function syncPullSilent() {
     const payload = json.data;
     saveResources(payload.resources || []);
     saveShiftConfigs(payload.shiftConfigs || []);
+    saveLocations(payload.locations || []);
+    saveHolidays(payload.holidays || {});
     saveData(payload.data || {});
     resources    = loadResources();
     shiftConfigs = loadShiftConfigs();
+    locations    = loadLocations();
+    holidays     = loadHolidays();
     allData      = loadData();
     renderChips(); renderGrid(); renderLiveBar();
     setSyncStatus('✓ Auto-pulled at ' + new Date().toLocaleTimeString(), '#27ae60');
@@ -2312,7 +2703,7 @@ async function syncPullSilent() {
 
 // Called after every data change — debounced 2s
 function autoSyncPushIfEnabled() {
-  if (!document.getElementById('autoSyncPush')?.checked) return;
+  if (localStorage.getItem(LS_AUTO_PUSH) !== '1') return;
   clearTimeout(_syncPushDebounce);
   _syncPushDebounce = setTimeout(() => syncPushSilent(), 2000);
 }
@@ -2326,6 +2717,8 @@ async function syncPushSilent() {
     pushedAt: new Date().toISOString(),
     resources:    loadResources(),
     shiftConfigs: loadShiftConfigs(),
+    locations:    loadLocations(),
+    holidays:     loadHolidays(),
     data:         loadData(),
   };
   try {
@@ -2340,6 +2733,7 @@ function toggleSyncPanel() {
   const open  = panel.style.display === 'none';
   panel.style.display = open ? 'block' : 'none';
   document.getElementById('syncPanelBtn').classList.toggle('filter-active', open);
+  requestAnimationFrame(() => { updateStickyTops(); });
   if (open) {
     document.getElementById('syncURL').value = localStorage.getItem(LS_SYNC_URL) || '';
     document.getElementById('autoSyncPush').checked = localStorage.getItem(LS_AUTO_PUSH) === '1';
@@ -2374,6 +2768,8 @@ async function syncPush() {
     pushedAt: new Date().toISOString(),
     resources:    loadResources(),
     shiftConfigs: loadShiftConfigs(),
+    locations:    loadLocations(),
+    holidays:     loadHolidays(),
     data:         loadData(),
   };
   try {
@@ -2466,6 +2862,41 @@ document.getElementById('newShiftPreset').addEventListener('change', function() 
 
 document.getElementById('monthPicker').addEventListener('change', () => { renderGrid(); renderLiveBar(); });
 
+function updateStickyTops() {
+  const headerH = document.querySelector('header').offsetHeight;
+  const toolbar = document.querySelector('.toolbar');
+  toolbar.style.top = headerH + 'px';
+  const toolbarH = toolbar.offsetHeight;
+
+  const panelTop = headerH + toolbarH;
+  document.getElementById('advFilterPanel').style.top = panelTop + 'px';
+  document.getElementById('syncPanel').style.top      = panelTop + 'px';
+
+  // Size grid-wrap to fill remaining viewport
+  // offsetTop gives distance from offsetParent (body), independent of scroll position
+  const gridWrap = document.querySelector('.grid-wrap');
+  if (gridWrap) {
+    gridWrap.style.height = 'auto'; // reset so offsetTop is accurate
+    const top = gridWrap.offsetTop;
+    gridWrap.style.height = (window.innerHeight - top - 20) + 'px';
+  }
+
+  applyGridHeaderTops();
+}
+
+function applyGridHeaderTops() {
+  const rows = document.querySelectorAll('#gridContainer thead tr');
+  let cumulative = 0;
+  rows.forEach(row => {
+    const h = row.offsetHeight;
+    row.querySelectorAll('th').forEach(th => { th.style.top = cumulative + 'px'; });
+    cumulative += h;
+  });
+}
+
+window.addEventListener('resize', updateStickyTops);
+updateStickyTops();
+
 document.getElementById('filterBox').addEventListener('input', function() {
   document.getElementById('filterClear').style.display = this.value ? 'inline' : 'none';
   applyFilter();
@@ -2501,12 +2932,12 @@ function renderLiveBar() {
       .filter(d => {
         if (d.isOff) return false;
         if (!inShift(h, d.start, d.end)) return false;
-        if (d.statusClass === 'absent' || d.statusClass === 'off') return false;
-        if (d.statusClass === 'pn1') {
+        if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
+        if (['pn1','pto1','hol1'].includes(d.statusClass)) {
           const mid = shiftMidHour(d.start, d.end);
           return inShift(h, mid, d.end);
         }
-        if (d.statusClass === 'pn2') {
+        if (['pn2','pto2','hol2'].includes(d.statusClass)) {
           const mid = shiftMidHour(d.start, d.end);
           return !inShift(h, mid, d.end);
         }
@@ -2543,23 +2974,23 @@ function renderLiveBar() {
   const curNames = availableNames(curH);
   let html = makeBox(`Today · ${dateLabel}`, curLabel, curPct, curNames);
 
-  // Box 2: remaining hours today (curH+1 to 23), avg coverage
-  const remaining = [];
-  for (let h = curH + 1; h < 24; h++) {
+  // Box 2: next 4 hours from now
+  const next4Start = curH + 1;
+  const next4End   = Math.min(curH + 4, 23); // cap at end of day
+  const next4Pcts  = [];
+  const next4Names = new Set();
+  for (let h = next4Start; h <= next4End; h++) {
     const p = liveCoverage(h);
-    if (p !== null) remaining.push(p);
+    if (p !== null) next4Pcts.push(p);
+    availableNames(h).forEach(n => next4Names.add(n));
   }
-  const remAvg = remaining.length
-    ? Math.round(remaining.reduce((a, b) => a + b, 0) / remaining.length)
+  const next4Avg = next4Pcts.length
+    ? Math.round(next4Pcts.reduce((a, b) => a + b, 0) / next4Pcts.length)
     : null;
-  const remHours = 23 - curH;
-  const remTimeStr = remHours > 0
-    ? `${String(curH + 1).padStart(2,'0')}:00 – 00:00 (next day)`
-    : 'No remaining hours';
-  // Names available for any remaining hour
-  const remNameSet = new Set();
-  for (let h = curH + 1; h < 24; h++) availableNames(h).forEach(n => remNameSet.add(n));
-  html += makeBox('Remaining hours today', remTimeStr, remAvg, [...remNameSet]);
+  const next4TimeStr = next4Start <= next4End
+    ? `${String(next4Start).padStart(2,'0')}:00 – ${String(next4End + 1).padStart(2,'0')}:00`
+    : 'No upcoming hours';
+  html += makeBox('Next 4 hours', next4TimeStr, next4Avg, [...next4Names]);
 
   bar.innerHTML = html;
 }
