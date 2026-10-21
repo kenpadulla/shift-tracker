@@ -482,10 +482,6 @@ tbody tr:active td { background: #c8daf5 !important; }
       </div>
       <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;align-items:center">
         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin:0">
-          <input type="checkbox" id="autoSyncPush" onchange="toggleAutoSync()" />
-          Auto-push on every change
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin:0">
           <input type="checkbox" id="autoSyncPull" onchange="toggleAutoSync()" />
           Auto-pull every
           <select id="autoSyncInterval" onchange="toggleAutoSync()" style="padding:2px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px">
@@ -1259,7 +1255,9 @@ function getMonthData() {
 
 function setCell(day, resName, field, val) {
   const key = `${day}_${resName}_${field}`;
+  const ym = currentMonth();
   getMonthData()[key] = val;
+  _localDataChanges.add(`${ym}|${key}`);
   saveData(allData);
   showSavedToast();
   autoSyncPushIfEnabled();
@@ -2793,10 +2791,8 @@ let _autoPullTimer = null;
 let _syncPushDebounce = null;
 
 function toggleAutoSync() {
-  const doPush = document.getElementById('autoSyncPush').checked;
   const doPull = document.getElementById('autoSyncPull').checked;
   const interval = parseInt(document.getElementById('autoSyncInterval').value);
-  localStorage.setItem(LS_AUTO_PUSH, doPush ? '1' : '0');
   localStorage.setItem(LS_AUTO_PULL, doPull ? '1' : '0');
   localStorage.setItem(LS_AUTO_INTERVAL, interval);
   startAutoPull();
@@ -2831,36 +2827,75 @@ async function syncPullSilent() {
     locations    = loadLocations();
     holidays     = loadHolidays();
     allData      = loadData();
+    _localDataChanges.clear();
     renderChips(); renderGrid(); renderLiveBar();
     setSyncStatus('✓ Auto-pulled at ' + new Date().toLocaleTimeString(), '#27ae60');
     showSyncedToast('✔ Successfully synced');
   } catch { _suppressSaveToast = false; /* silent fail */ }
 }
 
-// Called after every data change — debounced 2s
+// Tracks locally changed data cells since last successful push: Set of "month|key"
+const _localDataChanges = new Set();
+
+// Called after every data change — pushes automatically if a sync URL is configured
 function autoSyncPushIfEnabled() {
-  if (localStorage.getItem(LS_AUTO_PUSH) !== '1') return;
+  if (!localStorage.getItem(LS_SYNC_URL)) return;
+  if (_suppressSaveToast) return; // skip during incoming sync pull
   clearTimeout(_syncPushDebounce);
   _syncPushDebounce = setTimeout(() => syncPushSilent(), 2000);
 }
 
-// Push without UI feedback noise
+// Push without UI feedback noise — pull first, merge local changes on top, then push
 async function syncPushSilent() {
   const url = localStorage.getItem(LS_SYNC_URL);
   if (!url) return;
-  const payload = {
-    version: 1,
-    pushedAt: new Date().toISOString(),
-    resources:    loadResources(),
-    shiftConfigs: loadShiftConfigs(),
-    locations:    loadLocations(),
-    holidays:     loadHolidays(),
-    data:         loadData(),
-  };
   try {
-    const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
-    const json = await res.json();
-    if (json.ok) {
+    // Step 1: pull current server state
+    let serverData = {};
+    let serverResources = null, serverShiftConfigs = null, serverLocations = null, serverHolidays = null;
+    try {
+      const pullRes = await fetch(url);
+      const pullJson = await pullRes.json();
+      if (pullJson.ok && pullJson.data && pullJson.data.version === 1) {
+        const remote = pullJson.data;
+        serverData        = remote.data         || {};
+        serverResources   = remote.resources    || null;
+        serverShiftConfigs= remote.shiftConfigs || null;
+        serverLocations   = remote.locations    || null;
+        serverHolidays    = remote.holidays     || null;
+      }
+    } catch { /* no server state yet — first push */ }
+
+    // Step 2: merge — start from server state, overlay local cell changes on top
+    const localData = loadData();
+    const mergedData = JSON.parse(JSON.stringify(serverData)); // deep clone server
+    _localDataChanges.forEach(token => {
+      const [ym, key] = token.split('|');
+      if (!mergedData[ym]) mergedData[ym] = {};
+      const localVal = (localData[ym] || {})[key];
+      if (localVal !== undefined) mergedData[ym][key] = localVal;
+      else delete mergedData[ym][key];
+    });
+
+    // Step 3: push merged result (config arrays use local — last-writer-wins for config)
+    const payload = {
+      version: 1,
+      pushedAt: new Date().toISOString(),
+      resources:    loadResources(),
+      shiftConfigs: loadShiftConfigs(),
+      locations:    loadLocations(),
+      holidays:     loadHolidays(),
+      data:         mergedData,
+    };
+    const pushRes = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+    const pushJson = await pushRes.json();
+    if (pushJson.ok) {
+      // Update local data to merged state so next push has accurate baseline
+      _suppressSaveToast = true;
+      saveData(mergedData);
+      allData = mergedData;
+      _suppressSaveToast = false;
+      _localDataChanges.clear();
       setSyncStatus('✓ Auto-pushed at ' + new Date().toLocaleTimeString(), '#27ae60');
       showSyncedToast('✔ Successfully synced');
     }
@@ -2875,7 +2910,6 @@ function toggleSyncPanel() {
   requestAnimationFrame(() => { updateStickyTops(); });
   if (open) {
     document.getElementById('syncURL').value = localStorage.getItem(LS_SYNC_URL) || '';
-    document.getElementById('autoSyncPush').checked = localStorage.getItem(LS_AUTO_PUSH) === '1';
     document.getElementById('autoSyncPull').checked = localStorage.getItem(LS_AUTO_PULL) === '1';
     document.getElementById('autoSyncInterval').value = localStorage.getItem(LS_AUTO_INTERVAL) || '60';
   }
@@ -2942,6 +2976,7 @@ async function syncPull() {
     resources    = loadResources();
     shiftConfigs = loadShiftConfigs();
     allData      = loadData();
+    _localDataChanges.clear();
     const months = Object.keys(payload.data || {}).sort();
     if (months.length) document.getElementById('monthPicker').value = months[months.length - 1];
     renderChips(); renderGrid(); renderLiveBar();
