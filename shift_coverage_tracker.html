@@ -900,6 +900,30 @@ function loadData() {
 }
 function saveData(d) { localStorage.setItem(LS_DATA, JSON.stringify(d)); showSavedToast(); autoSyncPushIfEnabled(); }
 
+// Stamp a snapshot of current resources into the given month's data (Option A)
+function stampMonthSnapshot(ym) {
+  if (!allData[ym]) allData[ym] = {};
+  const snap = {};
+  loadResources().forEach(res => {
+    snap[res.name] = {
+      shiftLabel: res.shiftLabel || '',
+      shiftStart: res.shiftStart || '',
+      shiftEnd:   res.shiftEnd   || '',
+      tz:         res.tz         || '',
+      location:   res.location   || '',
+      offDays:    res.offDays    || []
+    };
+  });
+  allData[ym]._snapshot = snap;
+}
+
+// Get the resource list for a given month — uses snapshot if available, else live
+function getMonthResources(ym) {
+  const snap = (allData[ym] || {})._snapshot;
+  if (!snap || Object.keys(snap).length === 0) return loadResources();
+  return Object.entries(snap).map(([name, s]) => ({ name, ...s }));
+}
+
 // ── Timezone ─────────────────────────────────────────────────────
 const LS_TZ = 'sct_tz';
 const COMMON_TZS = [
@@ -1323,6 +1347,7 @@ function setCell(day, resName, field, val) {
   const ym = currentMonth();
   getMonthData()[key] = val;
   _localDataChanges.add(`${ym}|${key}`);
+  stampMonthSnapshot(ym);
   saveData(allData);
   showSavedToast();
   autoSyncPushIfEnabled();
@@ -1985,6 +2010,8 @@ function renderGrid() {
         inp.dataset.field = 'status';
         inp.addEventListener('change', onCellChange);
         inp.addEventListener('input', onCellInput);
+        inp.addEventListener('focus', () => { _isEditing = true; });
+        inp.addEventListener('blur',  () => { _isEditing = false; });
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
         applyStatusStyle(td, inp.value);
         td.appendChild(inp);
@@ -2525,6 +2552,7 @@ function addResource() {
   renderChips();
   renderGrid();
   renderLiveBar();
+  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 function removeResource(i) {
@@ -2534,6 +2562,7 @@ function removeResource(i) {
   renderChips();
   renderGrid();
   renderLiveBar();
+  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 let editingIndex = -1;
@@ -2637,6 +2666,7 @@ function saveEditResource() {
   renderChips();
   renderGrid();
   renderLiveBar();
+  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 document.getElementById('editOffDays').addEventListener('change', function() {
@@ -2681,6 +2711,7 @@ function showPanel(id) {
 let _manageActiveTab = 'resources';
 
 function openManageModal(tab) {
+  _isEditing = true;
   _manageActiveTab = tab || 'resources';
   locations    = loadLocations();
   shiftConfigs = loadShiftConfigs();
@@ -2690,6 +2721,7 @@ function openManageModal(tab) {
 }
 
 function closeManageModal() {
+  _isEditing = false;
   document.getElementById('manageOverlay').classList.remove('open');
 }
 
@@ -2850,9 +2882,12 @@ function startAutoPull() {
 }
 
 // Pull without confirm dialog — for auto-pull
+let _isEditing = false;
+
 async function syncPullSilent() {
   const url = localStorage.getItem(LS_SYNC_URL);
   if (!url) return;
+  if (_isEditing) return;
   try {
     const res = await fetch(url);
     const json = await res.json();
@@ -3491,11 +3526,12 @@ function buildYearlyView() {
     const m = mi + 1;
     const ym = `${y}-${String(m).padStart(2,'0')}`;
     const days = daysInMonth(ym);
+    const monthRes = getMonthResources(ym);
     let totalAvail = 0, totalSched = 0, workDays = 0;
     for (let day = 1; day <= days; day++) {
       const { dayName } = getDayInfo(ym, day);
       let dayHasResource = false;
-      resources.forEach(res => {
+      monthRes.forEach(res => {
         if (isOffDay(res, dayName)) return;
         totalSched++;
         dayHasResource = true;
@@ -3510,7 +3546,7 @@ function buildYearlyView() {
     const isThisMonth = m === todayMonth;
     const wdiv = workDays || 1;
     const dispAvail = workDays > 0 ? Math.round(totalAvail / wdiv) : 0;
-    const dispTotal = resources.length;
+    const dispTotal = monthRes.length;
     return {
       pct,
       available: dispAvail,
@@ -3632,14 +3668,15 @@ function buildBarChart(items, maxVal, getLabel, getToday) {
 
 function buildResTable(dayData) {
   const ym = _trendYM;
+  const monthRes = getMonthResources(ym);
   let rows = '';
-  resources.forEach(res => {
+  monthRes.forEach(res => {
     let presentDays = 0, halfDays = 0, absentDays = 0, holDays = 0, workSched = 0;
     dayData.forEach(({ day }) => {
       const { dayName } = getDayInfo(ym, day);
       if (isOffDay(res, dayName)) return;
       workSched++;
-      const status = getCell(day, res.name, 'status').trim().toUpperCase();
+      const status = getCellForMonth(ym, day, res.name, 'status').trim().toUpperCase();
       if (status === 'HOL') holDays++;
       else if (status === '') presentDays++;
       else if (['PN1','PN2','PTO1','PTO2'].includes(status)) halfDays++;
@@ -3647,7 +3684,7 @@ function buildResTable(dayData) {
     });
     const avail = presentDays + halfDays * 0.5;
     const availPct = workSched > 0 ? Math.round((avail / workSched) * 100) : 0;
-    const color = availPct >= 75 ? '#1e8449' : availPct >= 40 ? '#b7770d' : '#c0392b';
+    const color = pctToColor(availPct);
     rows += `<tr>
       <td style="font-weight:600">${res.name}</td>
       <td>${res.location || '—'}</td>
@@ -3759,7 +3796,7 @@ function buildWeeklyView() {
     // Display as avg available per working day / total resources
     const workDayCount = work.length || 1;
     const dispAvail = work.length > 0 ? Math.round(totalAvail / workDayCount) : 0;
-    const dispTotal = resources.length;
+    const dispTotal = getMonthResources(_trendYM).length;
     const hasToday = w.days.some(d => d.day === todayDay);
     const rangeLabel = `${w.start}–${w.end}`;
     return {
