@@ -397,9 +397,42 @@ tbody tr:active td { background: #c8daf5 !important; }
   <button class="btn-light" onclick="exportCSV()">Export CSV</button>
   <button class="btn-light" onclick="exportData()">⬇ Export Data</button>
   <label class="btn-light" style="cursor:pointer;margin:0;padding:6px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center">⬆ Import Data<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+  <button class="btn-light" onclick="toggleSyncPanel()" id="syncPanelBtn" style="border-color:#27ae60;color:#27ae60">☁ Cloud Sync</button>
 
   <button class="btn-light" onclick="clearMonthData()">Clear This Month</button>
   <button class="btn-danger" onclick="clearAll()">Reset All Data</button>
+</div>
+
+<!-- Cloud Sync Panel -->
+<div id="syncPanel" style="display:none;background:#fff;border-bottom:2px solid #27ae60;padding:14px 20px">
+  <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px">
+      <div style="font-size:12px;font-weight:700;color:#1a3c5e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Google Sheets Sync</div>
+      <label style="font-size:11px;color:#555">Web App URL
+        <input type="url" id="syncURL" placeholder="https://script.google.com/macros/s/…/exec"
+          style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
+      </label>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn-success" onclick="syncPush()" style="font-size:12px">⬆ Push (save to sheet)</button>
+        <button class="btn-primary" onclick="syncPull()" style="font-size:12px">⬇ Pull (load from sheet)</button>
+        <button class="btn-light"   onclick="saveSyncURL()" style="font-size:12px">💾 Save URL</button>
+      </div>
+      <div id="syncStatus" style="margin-top:8px;font-size:12px;min-height:18px"></div>
+    </div>
+    <div style="flex:0 0 320px;background:#f4f7fc;border-radius:6px;padding:12px 14px;font-size:11px;color:#555;line-height:1.7">
+      <strong style="color:#1a3c5e">Setup (one-time, ~5 min):</strong><br>
+      1. Open <strong>Google Sheets</strong> → create a new blank sheet<br>
+      2. Click <strong>Extensions → Apps Script</strong><br>
+      3. Delete all existing code, paste the script below → Save<br>
+      4. Click <strong>Deploy → New deployment → Web app</strong><br>
+      5. Execute as: <em>Me</em> · Who has access: <em>Anyone</em><br>
+      6. Click <strong>Deploy</strong> → copy the Web App URL → paste it above<br>
+      7. Click <strong>Save URL</strong> then <strong>⬆ Push</strong> to upload your data<br>
+      <br>
+      <button class="btn-light" style="font-size:11px;padding:3px 10px" onclick="copyGASScript()">📋 Copy Apps Script</button>
+      <span id="gasCopyMsg" style="color:#27ae60;margin-left:6px;display:none">Copied!</span>
+    </div>
+  </div>
 </div>
 
 <!-- Advanced Filter Panel -->
@@ -2176,6 +2209,129 @@ function importData(event) {
     event.target.value = ''; // reset so same file can be re-imported
   };
   reader.readAsText(file);
+}
+
+// ── Google Sheets Sync ───────────────────────────────────────────
+const LS_SYNC_URL = 'sct_sync_url';
+
+const GAS_SCRIPT = `// Shift Coverage Tracker — Google Apps Script
+// Paste this in Extensions > Apps Script, then deploy as Web App
+// Execute as: Me | Who has access: Anyone
+
+const SHEET_NAME = 'SyncData';
+
+function doGet(e) {
+  const sheet = getSheet();
+  const val = sheet.getRange(1, 1).getValue();
+  const data = val ? JSON.parse(val) : {};
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, data }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const sheet = getSheet();
+  const payload = JSON.parse(e.postData.contents);
+  sheet.getRange(1, 1).setValue(JSON.stringify(payload));
+  sheet.getRange(1, 2).setValue(new Date().toISOString());
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.getRange(1, 1).setValue('{}');
+  }
+  return sheet;
+}`;
+
+function toggleSyncPanel() {
+  const panel = document.getElementById('syncPanel');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  document.getElementById('syncPanelBtn').classList.toggle('filter-active', open);
+  if (open) {
+    const saved = localStorage.getItem(LS_SYNC_URL) || '';
+    document.getElementById('syncURL').value = saved;
+  }
+}
+
+function saveSyncURL() {
+  const url = document.getElementById('syncURL').value.trim();
+  localStorage.setItem(LS_SYNC_URL, url);
+  setSyncStatus('URL saved.', '#27ae60');
+}
+
+function getSyncURL() {
+  const url = document.getElementById('syncURL').value.trim() || localStorage.getItem(LS_SYNC_URL) || '';
+  if (!url) { setSyncStatus('Paste your Web App URL first.', '#c0392b'); return null; }
+  return url;
+}
+
+function setSyncStatus(msg, color) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.style.color = color || '#555';
+}
+
+async function syncPush() {
+  const url = getSyncURL(); if (!url) return;
+  setSyncStatus('Pushing…', '#888');
+  const payload = {
+    version: 1,
+    pushedAt: new Date().toISOString(),
+    resources:    loadResources(),
+    shiftConfigs: loadShiftConfigs(),
+    data:         loadData(),
+  };
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (json.ok) setSyncStatus('✓ Pushed successfully at ' + new Date().toLocaleTimeString(), '#27ae60');
+    else throw new Error(JSON.stringify(json));
+  } catch (err) {
+    setSyncStatus('Push failed: ' + err.message, '#c0392b');
+  }
+}
+
+async function syncPull() {
+  const url = getSyncURL(); if (!url) return;
+  setSyncStatus('Pulling…', '#888');
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.ok) throw new Error(JSON.stringify(json));
+    const payload = json.data;
+    if (!payload || payload.version !== 1) throw new Error('No data in sheet yet — push first.');
+    if (!confirm(`Load data from Google Sheet?\nPushed at: ${payload.pushedAt || 'unknown'}\n\nThis will REPLACE your local data.`)) return;
+    saveResources(payload.resources || []);
+    saveShiftConfigs(payload.shiftConfigs || []);
+    saveData(payload.data || {});
+    resources    = loadResources();
+    shiftConfigs = loadShiftConfigs();
+    allData      = loadData();
+    const months = Object.keys(payload.data || {}).sort();
+    if (months.length) document.getElementById('monthPicker').value = months[months.length - 1];
+    renderChips(); renderGrid(); renderLiveBar();
+    setSyncStatus('✓ Pulled successfully at ' + new Date().toLocaleTimeString(), '#27ae60');
+  } catch (err) {
+    setSyncStatus('Pull failed: ' + err.message, '#c0392b');
+  }
+}
+
+function copyGASScript() {
+  navigator.clipboard.writeText(GAS_SCRIPT).then(() => {
+    const msg = document.getElementById('gasCopyMsg');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 2500);
+  });
 }
 
 // ── Clear / Reset ────────────────────────────────────────────────
