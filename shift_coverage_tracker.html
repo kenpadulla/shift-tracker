@@ -11,6 +11,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; font-size: 13px; }
 header {
   background: #1a3c5e; color: #fff; padding: 14px 20px;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 101;
 }
 header h1 { font-size: 18px; font-weight: 700; }
 header select, header input[type=month] {
@@ -21,6 +22,8 @@ header select, header input[type=month] {
 .toolbar {
   background: #fff; padding: 10px 20px; border-bottom: 1px solid #ddd;
   display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
 }
 button {
   padding: 6px 14px; border: none; border-radius: 4px;
@@ -385,26 +388,26 @@ tbody tr:active td { background: #c8daf5 !important; }
 </header>
 
 <div class="toolbar">
-  <button class="btn-primary" onclick="showPanel('resourcePanel')">Manage Resources</button>
+  <button class="btn-light" onclick="toggleAdvancedFilter()" id="advFilterBtn">⚙ Advanced Filter</button>
   <div style="display:flex;align-items:center;gap:6px;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:5px;padding:4px 10px;flex:1;max-width:260px">
     <span style="color:#888;font-size:13px">🔍</span>
     <input type="text" id="filterBox" placeholder="Quick filter by name…"
       style="border:none;background:transparent;outline:none;font-size:12px;width:100%;color:#222" />
     <button type="button" id="filterClear" tabindex="-1" onclick="clearFilter()" style="display:none;background:transparent;border:none;color:#888;cursor:pointer;font-size:14px;padding:0;line-height:1">✕</button>
   </div>
-  <button class="btn-light" onclick="toggleAdvancedFilter()" id="advFilterBtn">⚙ Advanced Filter</button>
   <span id="filterTag" style="display:none;font-size:11px;color:#2980b9;font-weight:600;white-space:nowrap"></span>
+  <div style="width:1px;background:#dde;align-self:stretch;margin:0 2px"></div>
+  <button class="btn-primary" onclick="showPanel('resourcePanel')">Manage Resources</button>
   <button class="btn-light" onclick="exportCSV()">Export CSV</button>
   <button class="btn-light" onclick="exportData()">⬇ Export Data</button>
   <label class="btn-light" style="cursor:pointer;margin:0;padding:6px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center">⬆ Import Data<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
   <button class="btn-light" onclick="toggleSyncPanel()" id="syncPanelBtn" style="border-color:#27ae60;color:#27ae60">☁ Cloud Sync</button>
-
   <button class="btn-light" onclick="clearMonthData()">Clear This Month</button>
   <button class="btn-danger" onclick="clearAll()">Reset All Data</button>
 </div>
 
 <!-- Cloud Sync Panel -->
-<div id="syncPanel" style="display:none;background:#fff;border-bottom:2px solid #27ae60;padding:14px 20px">
+<div id="syncPanel" style="display:none;background:#fff;border-bottom:2px solid #27ae60;padding:14px 20px;position:sticky;top:45px;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
   <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
     <div style="flex:1;min-width:280px">
       <div style="font-size:12px;font-weight:700;color:#1a3c5e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Google Sheets Sync</div>
@@ -452,7 +455,7 @@ tbody tr:active td { background: #c8daf5 !important; }
 </div>
 
 <!-- Advanced Filter Panel -->
-<div id="advFilterPanel" style="display:none;background:#fff;border-bottom:2px solid #c5cfe0;padding:14px 20px">
+<div id="advFilterPanel" style="display:none;background:#fff;border-bottom:2px solid #c5cfe0;padding:14px 20px;position:sticky;top:45px;z-index:99;box-shadow:0 2px 6px rgba(0,0,0,.08)">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <span style="font-size:12px;font-weight:700;color:#1a3c5e;text-transform:uppercase;letter-spacing:.4px">Advanced Filters <span style="font-weight:400;color:#888;font-size:11px">(any condition matches)</span></span>
     <div style="display:flex;gap:8px">
