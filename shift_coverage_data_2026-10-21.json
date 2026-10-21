@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-21T00:35:01.935Z",
+  "resources": [
+    {
+      "name": "Bhavya",
+      "offPreset": "sunmon",
+      "offCustom": "",
+      "shiftStart": "10:00",
+      "shiftEnd": "19:00",
+      "tz": "America/New_York",
+      "shiftLabel": "US Morning - TueSat"
+    },
+    {
+      "name": "Ken",
+      "offPreset": "frisat",
+      "offCustom": "",
+      "shiftStart": "08:00",
+      "shiftEnd": "17:00",
+      "tz": "America/New_York",
+      "shiftLabel": "US Moring - MonFri"
+    },
+    {
+      "name": "Homer",
+      "offPreset": "frisat",
+      "offCustom": "",
+      "shiftStart": "17:00",
+      "shiftEnd": "02:00",
+      "tz": "America/New_York",
+      "shiftLabel": "US Night - MonFri"
+    },
+    {
+      "name": "Abhijeet",
+      "offPreset": "frisat",
+      "offCustom": "",
+      "shiftStart": "08:00",
+      "shiftEnd": "17:00",
+      "tz": "America/New_York",
+      "shiftLabel": "US Moring - MonFri"
+    }
+  ],
+  "shiftConfigs": [
+    {
+      "label": "US Moring - MonFri",
+      "start": "08:00",
+      "end": "17:00",
+      "tz": "America/New_York"
+    },
+    {
+      "label": "US Morning - TueSat",
+      "start": "10:00",
+      "end": "19:00",
+      "tz": "America/New_York"
+    },
+    {
+      "label": "US Night - MonFri",
+      "start": "17:00",
+      "end": "02:00",
+      "tz": "America/New_York"
+    }
+  ],
+  "data": {
+    "2026-10": {
+      "2_Ken_pto": "",
+      "1_Ken_pto": "PN",
+      "1_Ken_status": "",
+      "4_Ken_status": "",
+      "1_Bhavya_status": "PN1"
+    }
+  }
+}
