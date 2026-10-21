@@ -832,6 +832,24 @@ tbody tr:active td { background: #c8daf5 !important; }
 // ── Saved toast ──────────────────────────────────────────────────
 let _savedToastTimer = null;
 let _suppressSaveToast = false;
+// Returns a hex color from red (0%) → orange → yellow → green (≥50%)
+function pctToColor(pct) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const ratio = Math.min(clamped / 50, 1); // 0→0, 50+→1
+  const hue = Math.round(ratio * 120); // 0=red, 120=green
+  const s = 75, l = 38;
+  // Convert HSL to hex
+  const h = hue / 360, sl = s / 100, ll = l / 100;
+  const q = ll < 0.5 ? ll * (1 + sl) : ll + sl - ll * sl;
+  const p = 2 * ll - q;
+  const toHex = t => {
+    const v = t < 0 ? t+1 : t > 1 ? t-1 : t;
+    const c = v < 1/6 ? p+(q-p)*6*v : v < 1/2 ? q : v < 2/3 ? p+(q-p)*(2/3-v)*6 : p;
+    return Math.round(c*255).toString(16).padStart(2,'0');
+  };
+  return `#${toHex(h+1/3)}${toHex(h)}${toHex(h-1/3)}`;
+}
+
 function showSavedToast() {
   if (_suppressSaveToast) return;
   const el = document.getElementById('savedToast');
@@ -2063,12 +2081,10 @@ function openDayModal(day) {
     // Show the range summary for current hour
     const pct = _dayHourCovMap[currentHour];
     const label = `${String(currentHour).padStart(2,'0')}:00 – ${String(currentHour+1).padStart(2,'0')}:00`;
-    let pctClass = 'hc-none', pctText = '—', fillW = 0;
+    let pctText = '—', fillW = 0, fillColor = '#ececec', textColor = '#aaa';
     if (pct !== null && pct !== undefined) {
       pctText = pct + '%'; fillW = pct;
-      if (pct >= 75) pctClass = 'hc-high';
-      else if (pct >= 40) pctClass = 'hc-mid';
-      else pctClass = 'hc-low';
+      fillColor = pctToColor(pct); textColor = fillColor;
     }
     const panel = document.getElementById('rangeSummary');
     if (panel) {
@@ -2077,10 +2093,10 @@ function openDayModal(day) {
       document.getElementById('rsDetail').textContent = 'Current hour · today';
       const rsPct = document.getElementById('rsPct');
       rsPct.textContent = pctText;
-      rsPct.className = `rs-pct ${pctClass}`;
+      rsPct.className = 'rs-pct'; rsPct.style.color = textColor;
       const fill = document.getElementById('rsBarFill');
       fill.style.width = fillW + '%';
-      fill.className = `rs-bar-fill ${pctClass}`;
+      fill.className = 'rs-bar-fill'; fill.style.background = fillColor;
       renderRangeResourceList(currentHour, currentHour, _dayResData);
     }
   }
@@ -2110,17 +2126,15 @@ function wireHourHover() {
   function showTip(h, x, y) {
     const pct = _dayHourCovMap[h];
     const label = String(h).padStart(2,'0') + ':00 – ' + (h === 23 ? '00:00 (next day)' : String(h+1).padStart(2,'0') + ':00');
-    let pctClass = 'hc-none', pctText = '—';
+    let pctText = '—', textColor = '#aaa';
     if (pct !== null && pct !== undefined) {
       pctText = pct + '%';
-      if (pct >= 75) pctClass = 'hc-high';
-      else if (pct >= 40) pctClass = 'hc-mid';
-      else pctClass = 'hc-low';
+      textColor = pctToColor(pct);
     }
     tooltip.querySelector('.ht-label').textContent = label;
     const pctEl = tooltip.querySelector('.ht-pct');
     pctEl.textContent = pctText;
-    pctEl.className = `ht-pct ${pctClass}`;
+    pctEl.className = 'ht-pct'; pctEl.style.color = textColor;
     tooltip.style.display = 'block';
     tooltip.style.left = x + 'px';
     tooltip.style.top  = y + 'px';
@@ -2148,23 +2162,21 @@ function wireHourHover() {
     }
     const avg = pcts.length ? Math.round(pcts.reduce((a,b)=>a+b,0) / pcts.length) : null;
     const timeLabel = `${String(lo).padStart(2,'0')}:00 – ${String(hi+1).padStart(2,'0')}:00`;
-    let pctClass = 'hc-none', pctText = '—', fillW = 0;
+    let pctText = '—', fillW = 0, fillColor = '#ececec', textColor = '#aaa';
     if (avg !== null) {
       pctText = avg + '%'; fillW = avg;
-      if (avg >= 75) pctClass = 'hc-high';
-      else if (avg >= 40) pctClass = 'hc-mid';
-      else pctClass = 'hc-low';
+      fillColor = pctToColor(avg); textColor = fillColor;
     }
     const panel = document.getElementById('rangeSummary');
     panel.classList.add('visible');
     document.getElementById('rsTime').textContent  = timeLabel;
     document.getElementById('rsDetail').textContent = `${hi - lo + 1} hour${hi-lo ? 's' : ''} selected · per-hour avg`;
     const rsPct = document.getElementById('rsPct');
-    rsPct.textContent  = pctText;
-    rsPct.className    = `rs-pct ${pctClass}`;
+    rsPct.textContent = pctText;
+    rsPct.className = 'rs-pct'; rsPct.style.color = textColor;
     const fill = document.getElementById('rsBarFill');
-    fill.style.width   = fillW + '%';
-    fill.className     = `rs-bar-fill ${pctClass}`;
+    fill.style.width = fillW + '%';
+    fill.className = 'rs-bar-fill'; fill.style.background = fillColor;
     renderRangeResourceList(lo, hi, _dayResData);
   }
 
@@ -2274,12 +2286,12 @@ function renderRangeResourceList(lo, hi, resData) {
       }
     });
     const gPct = gTotal ? Math.round((gWork / gTotal) * 100) : null;
-    const gPctClass = gPct === null ? '' : gPct >= 75 ? 'hc-high' : gPct >= 40 ? 'hc-mid' : 'hc-low';
+    const gPctStyle = gPct !== null ? `color:${pctToColor(gPct)}` : '';
 
     html += `<div class="rrl-shift-group">
       <div class="rrl-shift-header">
         <span>${g.key}${timeStr ? ` <span style="font-weight:normal;opacity:.8">⏰ ${timeStr}</span>` : ''}</span>
-        ${gPct !== null ? `<span class="rrl-shift-cov ${gPctClass}">${gPct}%</span>` : ''}
+        ${gPct !== null ? `<span class="rrl-shift-cov" style="${gPctStyle}">${gPct}%</span>` : ''}
       </div>`;
 
     // Sort members: present first, then pn1/pn2
@@ -2365,22 +2377,17 @@ function buildDayView(day, dayName, covPct) {
   }
 
   // Coverage summary bar
-  let covClass = 'cov-none', fillClass = '';
-  let covLabel = covPct === null ? '—' : covPct + '%';
-  if (covPct !== null) {
-    if (covPct >= 75) { covClass = 'cov-high'; fillClass = 'day-cov-fill-high'; }
-    else if (covPct >= 40) { covClass = 'cov-mid'; fillClass = 'day-cov-fill-mid'; }
-    else { covClass = 'cov-low'; fillClass = 'day-cov-fill-low'; }
-  }
+  const covColor = covPct !== null ? pctToColor(covPct) : '#bbb';
+  const covLabel = covPct === null ? '—' : covPct + '%';
   const fillW = covPct !== null ? covPct : 0;
 
   let html = `
     <div class="day-cov-summary">
-      <div class="day-cov-pct ${covClass}">${covLabel}</div>
+      <div class="day-cov-pct" style="color:${covColor}">${covLabel}</div>
       <div class="day-cov-bar-wrap">
         <div style="font-size:11px;color:#555;margin-bottom:4px">Overall daily coverage</div>
         <div class="day-cov-bar-track">
-          <div class="day-cov-bar-fill ${fillClass}" style="width:${fillW}%"></div>
+          <div class="day-cov-bar-fill" style="width:${fillW}%;background:${covColor}"></div>
         </div>
       </div>
     </div>`;
@@ -2446,15 +2453,12 @@ function buildDayView(day, dayName, covPct) {
   html += `<tr class="hour-cov"><td class="hg-res-name">Coverage %</td>`;
   hours.forEach(h => {
     const pct = hourCovMap[h];
-    let cls = '';
-    let label = '—';
+    let style = '', label = '—';
     if (pct !== null) {
       label = pct + '%';
-      if (pct >= 75) cls = 'hc-high';
-      else if (pct >= 40) cls = 'hc-mid';
-      else cls = 'hc-low';
+      style = `color:${pctToColor(pct)}`;
     }
-    html += `<td data-hour="${h}" class="${cls}">${label}</td>`;
+    html += `<td data-hour="${h}" style="${style}">${label}</td>`;
   });
   html += `</tr>`;
 
@@ -2476,9 +2480,11 @@ function buildDayView(day, dayName, covPct) {
       return true;
     }).length;
     const hasAny = resData.some(d => d.start !== null && inShift(h, d.start, d.end));
-    const cls = !hasAny ? '' : count >= 2 ? 'hc-high' : count === 1 ? 'hc-mid' : 'hc-low';
+    const sched = hasAny ? resData.filter(d => !d.isOff && inShift(h, d.start, d.end)).length : 0;
+    const pct = sched > 0 ? Math.round((count / sched) * 100) : null;
+    const colorStyle = pct !== null ? `color:${pctToColor(pct)};` : '';
     const label = hasAny ? count : '—';
-    html += `<td data-hour="${h}" class="${cls}" style="font-weight:700">${label}</td>`;
+    html += `<td data-hour="${h}" style="${colorStyle}font-weight:700">${label}</td>`;
   });
   html += `</tr></tbody></table></div>`;
 
@@ -2933,6 +2939,7 @@ async function syncPushSilent() {
       allData = mergedData;
       _suppressSaveToast = false;
       _localDataChanges.clear();
+      renderLiveBar();
       setSyncStatus('✓ Auto-pushed at ' + new Date().toLocaleTimeString(), '#27ae60');
       showSyncedToast('✔ Successfully synced');
     }
@@ -3169,15 +3176,15 @@ function renderLiveBar() {
   }
 
   function makeBox(label, timeStr, pct, names) {
-    const cls  = pctClass(pct);
-    const pctTxt = pct === null ? '—' : pct + '%';
-    const fillW  = pct ?? 0;
+    const color   = pct !== null ? pctToColor(pct) : '#bbb';
+    const pctTxt  = pct === null ? '—' : pct + '%';
+    const fillW   = pct ?? 0;
     const namesTxt = names.length ? names.join(', ') : 'None available';
     return `<div class="live-box">
       <div class="lb-label">${label}</div>
       <div class="lb-time">${timeStr}</div>
-      <div class="lb-pct ${cls}">${pctTxt}</div>
-      <div class="lb-bar-track"><div class="lb-bar-fill ${cls}" style="width:${fillW}%"></div></div>
+      <div class="lb-pct" style="color:${color}">${pctTxt}</div>
+      <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${fillW}%;background:${color}"></div></div>
       <div class="lb-names">${namesTxt}</div>
     </div>`;
   }
@@ -3441,14 +3448,14 @@ function buildYearlyView() {
   let barsHtml = '', labelsHtml = '';
   monthItems.forEach((item, i) => {
     const heightPct = item.total > 0 ? Math.max((item.available / maxVal) * 100, 2) : 4;
-    const cls = item.pct === null ? 'tb-off' : item.pct >= 75 ? 'tb-high' : item.pct >= 40 ? 'tb-mid' : 'tb-low';
-    const valCls = item.pct === null ? 'tv-off' : item.pct >= 75 ? 'tv-high' : item.pct >= 40 ? 'tv-mid' : 'tv-low';
+    const barColor = item.pct === null ? '#ececec' : pctToColor(item.pct);
+    const valColor = item.pct === null ? '#bbb' : pctToColor(item.pct);
     const outline = item.isThisMonth ? 'outline:2px solid #1a3c5e;outline-offset:1px;' : '';
     const countLabel = item.total > 0 ? `${item.available}/${item.total}` : '—';
     const pctLabel   = item.pct !== null ? `${item.pct}%` : '';
     barsHtml += `<div class="trend-bar-wrap">
-      <div class="trend-bar-val ${valCls}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
-      <div class="trend-bar ${cls}" style="height:${heightPct}%;${outline}" title="${item.tip}"></div>
+      <div class="trend-bar-val" style="color:${valColor}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
+      <div class="trend-bar" style="height:${heightPct}%;background:${barColor};${outline}" title="${item.tip}"></div>
     </div>`;
     labelsHtml += `<div class="trend-label${item.isThisMonth ? ' tl-today' : ''}">${MONTHS[i]}</div>`;
   });
@@ -3526,21 +3533,15 @@ function buildBarChart(items, maxVal, getLabel, getToday) {
   let bars = '', labels = '';
   items.forEach(item => {
     const heightPct = item.total > 0 ? Math.max((item.available / maxVal) * 100, 2) : 4;
-    const cls = item.total === 0 ? 'tb-off'
-      : item.pct >= 75 ? 'tb-high'
-      : item.pct >= 40 ? 'tb-mid'
-      : 'tb-low';
-    const valCls = item.total === 0 ? 'tv-off'
-      : item.pct >= 75 ? 'tv-high'
-      : item.pct >= 40 ? 'tv-mid'
-      : 'tv-low';
+    const barColor = item.total === 0 ? '#ececec' : pctToColor(item.pct ?? 0);
+    const valColor = item.total === 0 ? '#bbb' : pctToColor(item.pct ?? 0);
     const isToday = getToday(item);
     const outline = isToday ? 'outline:2px solid #1a3c5e;outline-offset:1px;' : '';
     const countLabel = item.total > 0 ? `${item.available}/${item.total}` : '—';
     const pctLabel   = item.total > 0 ? `${item.pct}%` : '';
     bars += `<div class="trend-bar-wrap">
-      <div class="trend-bar-val ${valCls}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
-      <div class="trend-bar ${cls}" style="height:${heightPct}%;${outline}" title="${item.tip}"></div>
+      <div class="trend-bar-val" style="color:${valColor}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
+      <div class="trend-bar" style="height:${heightPct}%;background:${barColor};${outline}" title="${item.tip}"></div>
     </div>`;
     labels += `<div class="trend-label${isToday ? ' tl-today' : ''}">${getLabel(item)}</div>`;
   });
