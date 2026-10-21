@@ -550,7 +550,15 @@ tbody tr:active td { background: #c8daf5 !important; }
       <div id="mmTab-resources">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <span style="font-size:13px;font-weight:700;color:#1a3c5e">Team Members</span>
-          <button class="btn-success" onclick="showAddResourceRow()">+ Add Resource</button>
+          <div style="display:flex;gap:6px;align-items:center;position:relative">
+            <button class="btn-success" onclick="showAddResourceRow()">+ Add Resource</button>
+            <div style="position:relative">
+              <button class="btn-light" onclick="toggleResActionsMenu(event)" style="font-size:13px;padding:4px 10px;letter-spacing:1px" title="Bulk actions">⋯</button>
+              <div id="resActionsMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);z-index:500;min-width:210px;padding:4px 0">
+                <button onclick="applyHolidayToChecked();toggleResActionsMenu()" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:12px;color:#1a3c5e;font-weight:600" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='none'">🏖 Apply holidays to checked</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div id="addResourceRow" style="display:none;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-bottom:12px">
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -599,6 +607,7 @@ tbody tr:active td { background: #c8daf5 !important; }
         <table id="resourceListTable" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:#1a3c5e;color:#fff;text-align:left">
+              <th style="padding:7px 10px;border:1px solid #0d2438;width:32px;text-align:center"><input type="checkbox" id="resCheckAll" title="Select all" onchange="toggleAllResChecks(this.checked)" style="cursor:pointer" /></th>
               <th style="padding:7px 10px;border:1px solid #0d2438">Name</th>
               <th style="padding:7px 10px;border:1px solid #0d2438">Shift</th>
               <th style="padding:7px 10px;border:1px solid #0d2438">Time</th>
@@ -779,11 +788,23 @@ tbody tr:active td { background: #c8daf5 !important; }
 <script>
 // ── Saved toast ──────────────────────────────────────────────────
 let _savedToastTimer = null;
+let _suppressSaveToast = false;
 function showSavedToast() {
+  if (_suppressSaveToast) return;
   const el = document.getElementById('savedToast');
+  el.textContent = '✔ Saved';
+  el.style.background = 'rgba(30,132,73,0.88)';
   el.classList.add('show');
   clearTimeout(_savedToastTimer);
   _savedToastTimer = setTimeout(() => el.classList.remove('show'), 1500);
+}
+function showSyncedToast(msg) {
+  const el = document.getElementById('savedToast');
+  el.textContent = msg || '✔ Synced';
+  el.style.background = 'rgba(41,128,185,0.90)';
+  el.classList.add('show');
+  clearTimeout(_savedToastTimer);
+  _savedToastTimer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 
 // ── Storage helpers ──────────────────────────────────────────────
@@ -816,7 +837,7 @@ function saveHolidays(h) { localStorage.setItem(LS_HOLIDAYS, JSON.stringify(h));
 function loadData() {
   try { return JSON.parse(localStorage.getItem(LS_DATA)) || {}; } catch { return {}; }
 }
-function saveData(d) { localStorage.setItem(LS_DATA, JSON.stringify(d)); }
+function saveData(d) { localStorage.setItem(LS_DATA, JSON.stringify(d)); showSavedToast(); autoSyncPushIfEnabled(); }
 
 // ── Timezone ─────────────────────────────────────────────────────
 const LS_TZ = 'sct_tz';
@@ -1396,6 +1417,7 @@ function renderResourceList() {
     const tr = document.createElement('tr');
     tr.style.background = i % 2 === 0 ? '#fff' : '#f8faff';
     tr.innerHTML = `
+      <td style="padding:7px 10px;border:1px solid #dde;text-align:center"><input type="checkbox" class="res-check" data-idx="${i}" style="cursor:pointer" /></td>
       <td style="padding:7px 10px;border:1px solid #dde;font-weight:600">${res.name}</td>
       <td style="padding:7px 10px;border:1px solid #dde;color:#1a3c5e">${res.shiftLabel || '—'}</td>
       <td style="padding:7px 10px;border:1px solid #dde">${shiftStr}${res.tz ? `<br><span style="font-size:10px;color:#888">${res.tz.split('/').pop().replace(/_/g,' ')}</span>` : ''}</td>
@@ -1652,6 +1674,50 @@ function removeHoliday(loc, date) {
   renderLocationList();
 }
 
+function toggleResActionsMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('resActionsMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  if (menu.style.display === 'block') {
+    const close = () => { menu.style.display = 'none'; document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  }
+}
+
+function toggleAllResChecks(checked) {
+  document.querySelectorAll('.res-check').forEach(cb => cb.checked = checked);
+}
+
+function applyHolidayToChecked() {
+  const ym = currentMonth();
+  if (!ym) { alert('Select a month first.'); return; }
+  const checked = [...document.querySelectorAll('.res-check:checked')];
+  if (checked.length === 0) { alert('No resources checked.'); return; }
+  const curHols = loadHolidays();
+  const [y, m] = ym.split('-').map(Number);
+  const days = daysInMonth(ym);
+  let totalApplied = 0;
+  const skipped = [];
+  checked.forEach(cb => {
+    const res = resources[Number(cb.dataset.idx)];
+    if (!res) return;
+    if (!res.location) { skipped.push(res.name); return; }
+    const hols = curHols[res.location] || [];
+    if (hols.length === 0) { skipped.push(res.name); return; }
+    let applied = 0;
+    for (let day = 1; day <= days; day++) {
+      const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      if (hols.includes(dateStr)) { setCell(day, res.name, 'status', 'HOL'); applied++; }
+    }
+    totalApplied += applied;
+  });
+  renderGrid();
+  renderLiveBar();
+  let msg = `Applied holidays to ${checked.length - skipped.length} resource(s). ${totalApplied} cell(s) updated.`;
+  if (skipped.length) msg += `\n\nSkipped (no location or holidays configured): ${skipped.join(', ')}`;
+  alert(msg);
+}
+
 function applyLocationHolidays(resName, resLocation) {
   const ym = currentMonth();
   if (!ym) return;
@@ -1793,6 +1859,10 @@ function renderGrid() {
   // ── tbody ──
   const tbody = document.createElement('tbody');
 
+  const tzNow = nowInTZ();
+  const todayDay = (tzNow.year === gy && tzNow.month === gm) ? tzNow.date : -1;
+  const todayStyle = 'background:#fff9c4 !important;font-weight:700;color:#7d6608;';
+
   for (let day = 1; day <= days; day++) {
     const { dayName, date } = getDayInfo(ym, day);
     const covPct = calcCoverage(day, dayName);
@@ -1803,7 +1873,9 @@ function renderGrid() {
     const allOff = visibleResources.every(r => isOffDay(r, dayName));
     if (allOff) tr.className = 'is-off';
 
+    const isToday = day === todayDay;
     const clickStyle = 'cursor:pointer;user-select:none';
+    const todayCellStyle = isToday ? todayStyle : '';
     const dateStr = `${gy}-${String(gm).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const curHols = loadHolidays();
     const holLocs = Object.entries(curHols)
@@ -1813,9 +1885,9 @@ function renderGrid() {
       ? `<span title="Holiday: ${holLocs.join(', ')}" style="font-size:11px;cursor:default;margin-left:3px;vertical-align:middle" onclick="event.stopPropagation()">🚩</span>`
       : '';
     tr.innerHTML = `
-      <td class="col-day" title="Click to see day breakdown" style="${clickStyle}">${day}</td>
-      <td class="col-dayname" title="Click to see day breakdown" style="${clickStyle}">${dayName}</td>
-      <td class="col-date" title="Click to see day breakdown" style="font-size:11px;${clickStyle}">${date}${flagHtml}</td>
+      <td class="col-day" title="Click to see day breakdown" style="${clickStyle};${todayCellStyle}">${day}</td>
+      <td class="col-dayname" title="Click to see day breakdown" style="${clickStyle};${todayCellStyle}">${dayName}</td>
+      <td class="col-date" title="Click to see day breakdown" style="font-size:11px;${clickStyle};${todayCellStyle}">${date}${flagHtml}</td>
     `;
     tr.querySelectorAll('td').forEach(td => td.addEventListener('click', () => openDayModal(day)));
 
@@ -2349,6 +2421,30 @@ function buildDayView(day, dayName, covPct) {
     }
     html += `<td data-hour="${h}" class="${cls}">${label}</td>`;
   });
+  html += `</tr>`;
+
+  // Total available resources per hour row
+  html += `<tr class="hour-cov"><td class="hg-res-name" style="font-weight:700;color:#1a3c5e">Total Available</td>`;
+  hours.forEach(h => {
+    const count = resData.filter(d => {
+      if (d.isOff) return false;
+      if (!inShift(h, d.start, d.end)) return false;
+      if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
+      if (['pn1','pto1'].includes(d.statusClass)) {
+        const mid = shiftMidHour(d.start, d.end);
+        return inShift(h, mid, d.end);
+      }
+      if (['pn2','pto2'].includes(d.statusClass)) {
+        const mid = shiftMidHour(d.start, d.end);
+        return !inShift(h, mid, d.end);
+      }
+      return true;
+    }).length;
+    const hasAny = resData.some(d => d.start !== null && inShift(h, d.start, d.end));
+    const cls = !hasAny ? '' : count >= 2 ? 'hc-high' : count === 1 ? 'hc-mid' : 'hc-low';
+    const label = hasAny ? count : '—';
+    html += `<td data-hour="${h}" class="${cls}" style="font-weight:700">${label}</td>`;
+  });
   html += `</tr></tbody></table></div>`;
 
   // Available resources list (populated on range selection)
@@ -2723,11 +2819,13 @@ async function syncPullSilent() {
     const json = await res.json();
     if (!json.ok || !json.data || json.data.version !== 1) return;
     const payload = json.data;
+    _suppressSaveToast = true;
     saveResources(payload.resources || []);
     saveShiftConfigs(payload.shiftConfigs || []);
     saveLocations(payload.locations || []);
     saveHolidays(payload.holidays || {});
     saveData(payload.data || {});
+    _suppressSaveToast = false;
     resources    = loadResources();
     shiftConfigs = loadShiftConfigs();
     locations    = loadLocations();
@@ -2735,7 +2833,8 @@ async function syncPullSilent() {
     allData      = loadData();
     renderChips(); renderGrid(); renderLiveBar();
     setSyncStatus('✓ Auto-pulled at ' + new Date().toLocaleTimeString(), '#27ae60');
-  } catch { /* silent fail */ }
+    showSyncedToast('✔ Successfully synced');
+  } catch { _suppressSaveToast = false; /* silent fail */ }
 }
 
 // Called after every data change — debounced 2s
@@ -2761,7 +2860,10 @@ async function syncPushSilent() {
   try {
     const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
     const json = await res.json();
-    if (json.ok) setSyncStatus('✓ Auto-pushed at ' + new Date().toLocaleTimeString(), '#27ae60');
+    if (json.ok) {
+      setSyncStatus('✓ Auto-pushed at ' + new Date().toLocaleTimeString(), '#27ae60');
+      showSyncedToast('✔ Successfully synced');
+    }
   } catch { /* silent fail */ }
 }
 
@@ -2832,9 +2934,11 @@ async function syncPull() {
     const payload = json.data;
     if (!payload || payload.version !== 1) throw new Error('No data in sheet yet — push first.');
     if (!confirm(`Load data from Google Sheet?\nPushed at: ${payload.pushedAt || 'unknown'}\n\nThis will REPLACE your local data.`)) return;
+    _suppressSaveToast = true;
     saveResources(payload.resources || []);
     saveShiftConfigs(payload.shiftConfigs || []);
     saveData(payload.data || {});
+    _suppressSaveToast = false;
     resources    = loadResources();
     shiftConfigs = loadShiftConfigs();
     allData      = loadData();
@@ -2842,7 +2946,9 @@ async function syncPull() {
     if (months.length) document.getElementById('monthPicker').value = months[months.length - 1];
     renderChips(); renderGrid(); renderLiveBar();
     setSyncStatus('✓ Pulled successfully at ' + new Date().toLocaleTimeString(), '#27ae60');
+    showSyncedToast('✔ Successfully synced');
   } catch (err) {
+    _suppressSaveToast = false;
     setSyncStatus('Pull failed: ' + err.message, '#c0392b');
   }
 }
