@@ -414,6 +414,41 @@ tbody tr:active td { background: #c8daf5 !important; }
 .chip button.btn-edit { background: #2980b9; color: #fff; border-radius: 50%; padding: 0; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; }
 .btn-light.filter-active { background: #2980b9; color: #fff; border-color: #2471a3; }
 
+/* Trend modal */
+#trendModal { width: 1200px; max-width: 97vw; max-height: 94vh; overflow-y: auto; padding: 0; }
+#trendModal .tm-header {
+  background: #1a3c5e; color: #fff; padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 1;
+}
+#trendModal .tm-header h3 { font-size: 15px; margin: 0; }
+#trendModal .tm-body { padding: 20px; }
+.trend-chart { display: flex; align-items: flex-end; gap: 3px; height: 220px; border-bottom: 2px solid #c5cfe0; margin-bottom: 6px; padding-bottom: 0; }
+.trend-bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; }
+.trend-bar-val { font-size: 11px; font-weight: 700; color: #555; text-align: center; line-height: 1.2; margin-bottom: 2px; white-space: nowrap; }
+.trend-bar-val.tv-high { color: #1e8449; }
+.trend-bar-val.tv-mid  { color: #b7770d; }
+.trend-bar-val.tv-low  { color: #c0392b; }
+.trend-bar-val.tv-off  { color: #bbb; }
+.trend-bar { width: 100%; border-radius: 3px 3px 0 0; transition: opacity .15s; cursor: default; min-height: 2px; }
+.trend-bar:hover { opacity: .78; }
+.trend-bar.tb-high { background: #27ae60; }
+.trend-bar.tb-mid  { background: #f39c12; }
+.trend-bar.tb-low  { background: #e74c3c; }
+.trend-bar.tb-none { background: #e0e0e0; }
+.trend-bar.tb-off  { background: #ececec; }
+.trend-labels { display: flex; gap: 3px; }
+.trend-label { flex: 1; text-align: center; font-size: 9px; color: #888; line-height: 1.3; }
+.trend-label.tl-today { color: #1a3c5e; font-weight: 700; }
+.trend-summary { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+.trend-stat { background: #f4f7fc; border-radius: 6px; padding: 10px 16px; flex: 1; min-width: 120px; }
+.trend-stat .ts-val { font-size: 26px; font-weight: 800; line-height: 1; }
+.trend-stat .ts-lbl { font-size: 10px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+.trend-res-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 18px; }
+.trend-res-table th { background: #1a3c5e; color: #fff; padding: 7px 10px; text-align: left; border: 1px solid #0d2438; }
+.trend-res-table td { padding: 6px 10px; border: 1px solid #dde; }
+.trend-res-table tr:nth-child(even) td { background: #f8faff; }
+
 /* Saved toast */
 #savedToast {
   position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 99999;
@@ -461,6 +496,7 @@ tbody tr:active td { background: #c8daf5 !important; }
   <label class="btn-light" style="cursor:pointer;margin:0;padding:6px 14px;font-size:12px;font-weight:600;display:inline-flex;align-items:center">⬆ Import Data<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
   <button class="btn-light" onclick="syncPullSilent()" title="Pull latest data from cloud" style="border-color:#2980b9;color:#2980b9;padding:6px 10px">⟳</button>
   <button class="btn-light" onclick="toggleSyncPanel()" id="syncPanelBtn" style="border-color:#27ae60;color:#27ae60">☁ Cloud Sync</button>
+  <button class="btn-light" onclick="openTrendModal()" style="border-color:#8e44ad;color:#8e44ad">📈 Coverage Report</button>
   <button class="btn-light" onclick="clearMonthData()">Clear This Month</button>
   <button class="btn-danger" onclick="clearAll()">Reset All Data</button>
 </div>
@@ -780,6 +816,17 @@ tbody tr:active td { background: #c8daf5 !important; }
 </div>
 
 <div id="savedToast">✔ Saved</div>
+
+<!-- Trend Modal -->
+<div class="modal-overlay" id="trendOverlay">
+  <div class="modal" id="trendModal">
+    <div class="tm-header">
+      <h3 id="trendTitle">Monthly Trend</h3>
+      <button onclick="closeTrendModal()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div class="tm-body" id="trendBody"></div>
+  </div>
+</div>
 
 <script>
 // ── Saved toast ──────────────────────────────────────────────────
@@ -1265,6 +1312,9 @@ function setCell(day, resName, field, val) {
 
 function getCell(day, resName, field) {
   return (getMonthData()[`${day}_${resName}_${field}`] || '');
+}
+function getCellForMonth(ym, day, resName, field) {
+  return ((allData[ym] || {})[`${day}_${resName}_${field}`] || '');
 }
 
 // ── Off-day logic ────────────────────────────────────────────────
@@ -3184,6 +3234,509 @@ function stopLiveBar() { clearInterval(_liveBarTimer); }
     syncPullSilent(); // pull immediately on load
   }
 })();
+
+// ── Coverage Report Modal ────────────────────────────────────────
+let _trendView = 'monthly';
+let _trendDayData = [];
+let _trendYM = '';
+let _trendSelectedWeek = 0;
+let _trendYear = new Date().getFullYear();
+
+function openTrendModal() {
+  if (resources.length === 0) { alert('Add resources first.'); return; }
+  _trendYM = currentMonth() || '';
+  _trendView = 'yearly';
+  _trendSelectedWeek = 0;
+  _trendYear = _trendYM ? Number(_trendYM.split('-')[0]) : new Date().getFullYear();
+
+  // Build a month picker covering all months with data + current month
+  const allMonths = new Set(Object.keys(loadData()));
+  if (_trendYM) allMonths.add(_trendYM);
+  if (!_trendYM) { alert('Select a month first.'); return; }
+
+  document.getElementById('trendTitle').textContent = '📈 Coverage Report';
+  document.getElementById('trendBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e0e6ef">
+      <div id="trendMonthPickerWrap" style="display:none">
+        <label style="font-size:12px;font-weight:600;color:#555">Month:
+          <input type="month" id="trendMonthPicker" value="${_trendYM}" onchange="onTrendMonthChange(this.value)"
+            style="margin-left:6px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px" />
+        </label>
+      </div>
+      <div id="trendYearPickerWrap">
+        <label style="font-size:12px;font-weight:600;color:#555">Year:
+          <input type="number" id="trendYearPicker" value="${_trendYear}" min="2020" max="2099" onchange="onTrendYearChange(this.value)"
+            style="margin-left:6px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:80px" />
+        </label>
+      </div>
+      <div id="trendWeekPickerWrap" style="display:none">
+        <label style="font-size:12px;font-weight:600;color:#555">Week:
+          <select id="trendWeekPicker" onchange="onTrendWeekChange(this.value)"
+            style="margin-left:6px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+          </select>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #e0e6ef">
+      <button id="trendTabYearly" onclick="switchTrendView('yearly')"
+        style="padding:8px 20px;font-size:13px;font-weight:600;border:none;background:transparent;cursor:pointer;color:#1a3c5e;border-bottom:3px solid #1a3c5e;margin-bottom:-2px">
+        📊 Yearly
+      </button>
+      <button id="trendTabMonthly" onclick="switchTrendView('monthly')"
+        style="padding:8px 20px;font-size:13px;font-weight:600;border:none;background:transparent;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px">
+        📅 Monthly
+      </button>
+      <button id="trendTabWeekly" onclick="switchTrendView('weekly')"
+        style="padding:8px 20px;font-size:13px;font-weight:600;border:none;background:transparent;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px">
+        📆 Weekly
+      </button>
+    </div>
+    <div id="trendViewContent"></div>
+  `;
+
+  buildTrendDayData();
+  renderTrendView();
+  document.getElementById('trendOverlay').classList.add('open');
+}
+
+function buildTrendDayData() {
+  const ym = _trendYM;
+  const [y, m] = ym.split('-').map(Number);
+  const days = daysInMonth(ym);
+  _trendDayData = [];
+  for (let day = 1; day <= days; day++) {
+    const { dayName } = getDayInfo(ym, day);
+    const resData = buildResData(day, dayName);
+    const nonOff = resData.filter(d => !d.isOff);
+    let available = 0, total = nonOff.length;
+    nonOff.forEach(d => {
+      if (d.statusClass === 'present') available += 1;
+      else if (['pn1','pn2','pto1','pto2'].includes(d.statusClass)) available += 0.5;
+    });
+    const pct = total > 0 ? Math.round((available / total) * 100) : null;
+    _trendDayData.push({ day, dayName, pct, available: Math.round(available), total });
+  }
+}
+
+function buildTrendWeeks() {
+  const [y, m] = _trendYM.split('-').map(Number);
+  const weeks = [];
+  let curWeek = null, weekNum = 1;
+  _trendDayData.forEach(d => {
+    const date = new Date(y, m - 1, d.day);
+    const dow = date.getDay() === 0 ? 7 : date.getDay();
+    if (!curWeek || dow === 1) {
+      curWeek = { weekNum: weekNum++, days: [], start: d.day, end: d.day };
+      weeks.push(curWeek);
+    }
+    curWeek.days.push(d);
+    curWeek.end = d.day;
+  });
+  return weeks;
+}
+
+function populateWeekPicker(weeks) {
+  const sel = document.getElementById('trendWeekPicker');
+  if (!sel) return;
+  sel.innerHTML = `<option value="0">All weeks</option>` +
+    weeks.map(w => `<option value="${w.weekNum}"${_trendSelectedWeek === w.weekNum ? ' selected' : ''}>Week ${w.weekNum} (Day ${w.start}–${w.end})</option>`).join('');
+  sel.value = _trendSelectedWeek;
+}
+
+function onTrendMonthChange(ym) {
+  _trendYM = ym;
+  _trendSelectedWeek = 0;
+  buildTrendDayData();
+  if (_trendView === 'weekly') {
+    const weeks = buildTrendWeeks();
+    populateWeekPicker(weeks);
+  }
+  renderTrendView();
+}
+
+function onTrendWeekChange(val) {
+  _trendSelectedWeek = Number(val);
+  renderTrendView();
+}
+
+function switchTrendView(view) {
+  _trendView = view;
+  _trendSelectedWeek = 0;
+  ['monthly','weekly','yearly'].forEach(v => {
+    const btn = document.getElementById(`trendTab${v.charAt(0).toUpperCase()+v.slice(1)}`);
+    if (!btn) return;
+    btn.style.color = v === view ? '#1a3c5e' : '#888';
+    btn.style.borderBottomColor = v === view ? '#1a3c5e' : 'transparent';
+  });
+  const monthWrap = document.getElementById('trendMonthPickerWrap');
+  const yearWrap  = document.getElementById('trendYearPickerWrap');
+  const weekWrap  = document.getElementById('trendWeekPickerWrap');
+  if (monthWrap) monthWrap.style.display = (view === 'monthly' || view === 'weekly') ? 'block' : 'none';
+  if (yearWrap)  yearWrap.style.display  = view === 'yearly' ? 'block' : 'none';
+  if (weekWrap)  weekWrap.style.display  = view === 'weekly' ? 'block' : 'none';
+  if (view === 'weekly') { const weeks = buildTrendWeeks(); populateWeekPicker(weeks); }
+  renderTrendView();
+}
+
+function onTrendYearChange(val) {
+  _trendYear = Number(val);
+  renderTrendView();
+}
+
+function renderTrendView() {
+  const container = document.getElementById('trendViewContent');
+  if (_trendView === 'monthly')     container.innerHTML = buildMonthlyView();
+  else if (_trendView === 'weekly') container.innerHTML = buildWeeklyView();
+  else                              container.innerHTML = buildYearlyView();
+}
+
+
+function buildYearlyView() {
+  const y = _trendYear;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const tzNow = nowInTZ();
+  const todayMonth = tzNow.year === y ? tzNow.month : -1; // 1-based
+
+  // Aggregate per month — read data directly from allData[ym] to avoid currentMonth() dependency
+  const monthItems = MONTHS.map((name, mi) => {
+    const m = mi + 1;
+    const ym = `${y}-${String(m).padStart(2,'0')}`;
+    const days = daysInMonth(ym);
+    let totalAvail = 0, totalSched = 0, workDays = 0;
+    for (let day = 1; day <= days; day++) {
+      const { dayName } = getDayInfo(ym, day);
+      let dayHasResource = false;
+      resources.forEach(res => {
+        if (isOffDay(res, dayName)) return;
+        totalSched++;
+        dayHasResource = true;
+        const status = getCellForMonth(ym, day, res.name, 'status').trim().toUpperCase();
+        if (status === 'HOL' || (status !== '' && !['PN1','PN2','PTO1','PTO2'].includes(status))) return;
+        if (status === '') totalAvail += 1;
+        else totalAvail += 0.5;
+      });
+      if (dayHasResource) workDays++;
+    }
+    const pct = totalSched > 0 ? Math.round((totalAvail / totalSched) * 100) : null;
+    const isThisMonth = m === todayMonth;
+    const wdiv = workDays || 1;
+    const dispAvail = workDays > 0 ? Math.round(totalAvail / wdiv) : 0;
+    const dispTotal = resources.length;
+    return {
+      pct,
+      available: dispAvail,
+      total: dispTotal,
+      shortLabel: `${name} ${y}`,
+      tip: pct !== null
+        ? `${name} ${y}: ${pct}% coverage (avg ${dispAvail}/${dispTotal} per day)`
+        : `${name} ${y}: no data`,
+      isThisMonth
+    };
+  });
+
+  const maxVal = Math.max(...monthItems.map(d => d.available), 1);
+  const { bars, labels } = buildBarChart(monthItems, maxVal, (_, i) => MONTHS[monthItems.indexOf ? monthItems.indexOf(_) : i], d => d.isThisMonth);
+
+  // Rebuild labels with month names
+  let barsHtml = '', labelsHtml = '';
+  monthItems.forEach((item, i) => {
+    const heightPct = item.total > 0 ? Math.max((item.available / maxVal) * 100, 2) : 4;
+    const cls = item.pct === null ? 'tb-off' : item.pct >= 75 ? 'tb-high' : item.pct >= 40 ? 'tb-mid' : 'tb-low';
+    const valCls = item.pct === null ? 'tv-off' : item.pct >= 75 ? 'tv-high' : item.pct >= 40 ? 'tv-mid' : 'tv-low';
+    const outline = item.isThisMonth ? 'outline:2px solid #1a3c5e;outline-offset:1px;' : '';
+    const countLabel = item.total > 0 ? `${item.available}/${item.total}` : '—';
+    const pctLabel   = item.pct !== null ? `${item.pct}%` : '';
+    barsHtml += `<div class="trend-bar-wrap">
+      <div class="trend-bar-val ${valCls}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
+      <div class="trend-bar ${cls}" style="height:${heightPct}%;${outline}" title="${item.tip}"></div>
+    </div>`;
+    labelsHtml += `<div class="trend-label${item.isThisMonth ? ' tl-today' : ''}">${MONTHS[i]}</div>`;
+  });
+
+  // Per-resource yearly table
+  let resRows = '';
+  resources.forEach(res => {
+    let rowCells = `<td style="font-weight:600">${res.name}</td><td>${res.location || '—'}</td>`;
+    let yearAvail = 0, yearSched = 0;
+    MONTHS.forEach((name, mi) => {
+      const m = mi + 1;
+      const ym = `${y}-${String(m).padStart(2,'0')}`;
+      const days = daysInMonth(ym);
+      let avail = 0, workSched = 0;
+      for (let day = 1; day <= days; day++) {
+        const { dayName } = getDayInfo(ym, day);
+        if (isOffDay(res, dayName)) continue;
+        workSched++;
+        const status = getCellForMonth(ym, day, res.name, 'status').trim().toUpperCase();
+        if (status === '') avail += 1;
+        else if (['PN1','PN2','PTO1','PTO2'].includes(status)) avail += 0.5;
+      }
+      const pct = workSched > 0 ? Math.round((avail / workSched) * 100) : null;
+      const color = pct === null ? '#aaa' : pct >= 75 ? '#1e8449' : pct >= 40 ? '#b7770d' : '#c0392b';
+      rowCells += `<td style="text-align:center;font-weight:600;color:${color}">${pct !== null ? pct + '%' : '—'}</td>`;
+      yearAvail += avail; yearSched += workSched;
+    });
+    const yearPct = yearSched > 0 ? Math.round((yearAvail / yearSched) * 100) : null;
+    const yearColor = yearPct === null ? '#aaa' : yearPct >= 75 ? '#1e8449' : yearPct >= 40 ? '#b7770d' : '#c0392b';
+    rowCells += `<td style="text-align:center;font-weight:700;color:${yearColor}">${yearPct !== null ? yearPct + '%' : '—'}</td>`;
+    resRows += `<tr>${rowCells}</tr>`;
+  });
+
+  const monthHeaders = MONTHS.map(name => `<th style="text-align:center">${name}</th>`).join('');
+
+  // Summary using month items
+  const work = monthItems.filter(d => d.pct !== null);
+  const avgPct = work.length ? Math.round(work.reduce((s,d) => s + d.pct, 0) / work.length) : 0;
+  const best  = work.reduce((a,b) => a.pct > b.pct ? a : b, work[0]);
+  const worst = work.reduce((a,b) => a.pct < b.pct ? a : b, work[0]);
+  const bestIdx  = monthItems.indexOf(best);
+  const worstIdx = monthItems.indexOf(worst);
+  const avgColor = avgPct >= 75 ? '#1e8449' : avgPct >= 40 ? '#b7770d' : '#c0392b';
+
+  return `
+    <div class="trend-chart">${barsHtml}</div>
+    <div class="trend-labels">${labelsHtml}</div>
+    <div style="font-size:10px;color:#aaa;margin-top:2px;text-align:center;margin-bottom:4px">Month — ${y}</div>
+    <div class="trend-summary">
+      <div class="trend-stat">
+        <div class="ts-val" style="color:${avgColor}">${avgPct}%</div>
+        <div class="ts-lbl">Avg yearly coverage</div>
+      </div>
+      <div class="trend-stat">
+        <div class="ts-val" style="color:#1e8449">${best ? best.pct + '%' : '—'}</div>
+        <div class="ts-lbl">Best month${bestIdx >= 0 ? ` (${MONTHS[bestIdx]})` : ''}</div>
+      </div>
+      <div class="trend-stat">
+        <div class="ts-val" style="color:#c0392b">${worst ? worst.pct + '%' : '—'}</div>
+        <div class="ts-lbl">Lowest month${worstIdx >= 0 ? ` (${MONTHS[worstIdx]})` : ''}</div>
+      </div>
+      <div class="trend-stat">
+        <div class="ts-val" style="color:#1a3c5e">${resources.length}</div>
+        <div class="ts-lbl">Total resources</div>
+      </div>
+    </div>
+    <table class="trend-res-table">
+      <thead><tr><th>Resource</th><th>Location</th>${monthHeaders}<th style="text-align:center">Year Total</th></tr></thead>
+      <tbody>${resRows}</tbody>
+    </table>
+  `;
+}
+
+function buildBarChart(items, maxVal, getLabel, getToday) {
+  let bars = '', labels = '';
+  items.forEach(item => {
+    const heightPct = item.total > 0 ? Math.max((item.available / maxVal) * 100, 2) : 4;
+    const cls = item.total === 0 ? 'tb-off'
+      : item.pct >= 75 ? 'tb-high'
+      : item.pct >= 40 ? 'tb-mid'
+      : 'tb-low';
+    const valCls = item.total === 0 ? 'tv-off'
+      : item.pct >= 75 ? 'tv-high'
+      : item.pct >= 40 ? 'tv-mid'
+      : 'tv-low';
+    const isToday = getToday(item);
+    const outline = isToday ? 'outline:2px solid #1a3c5e;outline-offset:1px;' : '';
+    const countLabel = item.total > 0 ? `${item.available}/${item.total}` : '—';
+    const pctLabel   = item.total > 0 ? `${item.pct}%` : '';
+    bars += `<div class="trend-bar-wrap">
+      <div class="trend-bar-val ${valCls}">${countLabel}${pctLabel ? `<br>${pctLabel}` : ''}</div>
+      <div class="trend-bar ${cls}" style="height:${heightPct}%;${outline}" title="${item.tip}"></div>
+    </div>`;
+    labels += `<div class="trend-label${isToday ? ' tl-today' : ''}">${getLabel(item)}</div>`;
+  });
+  return { bars, labels };
+}
+
+function buildResTable(dayData) {
+  const ym = _trendYM;
+  let rows = '';
+  resources.forEach(res => {
+    let presentDays = 0, halfDays = 0, absentDays = 0, holDays = 0, workSched = 0;
+    dayData.forEach(({ day }) => {
+      const { dayName } = getDayInfo(ym, day);
+      if (isOffDay(res, dayName)) return;
+      workSched++;
+      const status = getCell(day, res.name, 'status').trim().toUpperCase();
+      if (status === 'HOL') holDays++;
+      else if (status === '') presentDays++;
+      else if (['PN1','PN2','PTO1','PTO2'].includes(status)) halfDays++;
+      else absentDays++;
+    });
+    const avail = presentDays + halfDays * 0.5;
+    const availPct = workSched > 0 ? Math.round((avail / workSched) * 100) : 0;
+    const color = availPct >= 75 ? '#1e8449' : availPct >= 40 ? '#b7770d' : '#c0392b';
+    rows += `<tr>
+      <td style="font-weight:600">${res.name}</td>
+      <td>${res.location || '—'}</td>
+      <td>${workSched}</td>
+      <td style="color:#1e8449">${presentDays}</td>
+      <td style="color:#b7770d">${halfDays}</td>
+      <td style="color:#c0392b">${absentDays}</td>
+      <td style="color:#1a6e72">${holDays}</td>
+      <td style="font-weight:700;color:${color}">${availPct}%</td>
+    </tr>`;
+  });
+  return `<table class="trend-res-table">
+    <thead><tr>
+      <th>Resource</th><th>Location</th><th>Sched Days</th>
+      <th>Present</th><th>Half Days</th><th>Absent</th><th>Holiday</th><th>Availability</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function buildSummaryCards(items, label) {
+  const work = items.filter(d => d.total > 0);
+  const avg = work.length ? Math.round(work.reduce((s,d) => s + (d.pct||0), 0) / work.length) : 0;
+  const best  = work.reduce((a,b) => (a.pct||0) > (b.pct||0) ? a : b, work[0]);
+  const worst = work.reduce((a,b) => (a.pct||0) < (b.pct||0) ? a : b, work[0]);
+  const avgColor = avg >= 75 ? '#1e8449' : avg >= 40 ? '#b7770d' : '#c0392b';
+  return `<div class="trend-summary">
+    <div class="trend-stat">
+      <div class="ts-val" style="color:${avgColor}">${avg}%</div>
+      <div class="ts-lbl">Avg ${label} coverage</div>
+    </div>
+    <div class="trend-stat">
+      <div class="ts-val" style="color:#1e8449">${best ? best.pct + '%' : '—'}</div>
+      <div class="ts-lbl">Best${best ? ` (${best.shortLabel})` : ''}</div>
+    </div>
+    <div class="trend-stat">
+      <div class="ts-val" style="color:#c0392b">${worst ? worst.pct + '%' : '—'}</div>
+      <div class="ts-lbl">Lowest${worst ? ` (${worst.shortLabel})` : ''}</div>
+    </div>
+    <div class="trend-stat">
+      <div class="ts-val" style="color:#1a3c5e">${resources.length}</div>
+      <div class="ts-lbl">Total resources</div>
+    </div>
+  </div>`;
+}
+
+function buildMonthlyView() {
+  const ym = _trendYM;
+  const [y, m] = ym.split('-').map(Number);
+  const tzNow = nowInTZ();
+  const todayDay = (tzNow.year === y && tzNow.month === m) ? tzNow.date : -1;
+
+  const items = _trendDayData.map(d => ({
+    ...d,
+    shortLabel: `${d.dayName} ${d.day}`,
+    tip: d.total === 0
+      ? `Day ${d.day}: no shift`
+      : `Day ${d.day} (${d.dayName}): ${d.available} available / ${d.total} scheduled — ${d.pct}%`
+  }));
+
+  const maxVal = Math.max(...items.map(d => d.available), 1);
+  const { bars, labels } = buildBarChart(items, maxVal, d => `${d.dayName.slice(0,2)}<br>${d.day}`, d => d.day === todayDay);
+
+  return `
+    <div class="trend-chart">${bars}</div>
+    <div class="trend-labels">${labels}</div>
+    <div style="font-size:10px;color:#aaa;margin-top:2px;text-align:center;margin-bottom:4px">Day of month</div>
+    ${buildSummaryCards(items, 'monthly')}
+    ${buildResTable(_trendDayData)}
+  `;
+}
+
+function buildWeeklyView() {
+  const ym = _trendYM;
+  const [y, m] = ym.split('-').map(Number);
+  const tzNow = nowInTZ();
+  const todayDay = (tzNow.year === y && tzNow.month === m) ? tzNow.date : -1;
+
+  const allWeeks = buildTrendWeeks();
+
+  // If a specific week is selected, show daily bars for that week only
+  if (_trendSelectedWeek > 0) {
+    const selWeek = allWeeks.find(w => w.weekNum === _trendSelectedWeek);
+    if (!selWeek) return '';
+    const dayItems = selWeek.days.map(d => ({
+      ...d,
+      shortLabel: `${d.dayName} ${d.day}`,
+      tip: d.total === 0
+        ? `Day ${d.day}: no shift`
+        : `${d.dayName} ${d.day}: ${d.available} available / ${d.total} scheduled — ${d.pct}%`
+    }));
+    const maxVal = Math.max(...dayItems.map(d => d.available), 1);
+    const { bars, labels } = buildBarChart(dayItems, maxVal, d => d.dayName.slice(0,2)+' '+d.day, d => d.day === todayDay);
+    return `
+      <div class="trend-chart">${bars}</div>
+      <div class="trend-labels">${labels}</div>
+      <div style="font-size:10px;color:#aaa;margin-top:2px;text-align:center;margin-bottom:4px">Week ${selWeek.weekNum} — Day ${selWeek.start}–${selWeek.end}</div>
+      ${buildSummaryCards(dayItems, `week ${selWeek.weekNum}`)}
+      ${buildResTable(selWeek.days)}
+    `;
+  }
+
+  // All weeks view — aggregate per week
+  const weekItems = allWeeks.map(w => {
+    const work = w.days.filter(d => d.total > 0);
+    const totalAvail = w.days.reduce((s,d) => s + d.available, 0);
+    const totalSched = w.days.reduce((s,d) => s + d.total, 0);
+    const pct = totalSched > 0 ? Math.round((totalAvail / totalSched) * 100) : null;
+    // Display as avg available per working day / total resources
+    const workDayCount = work.length || 1;
+    const dispAvail = work.length > 0 ? Math.round(totalAvail / workDayCount) : 0;
+    const dispTotal = resources.length;
+    const hasToday = w.days.some(d => d.day === todayDay);
+    const rangeLabel = `${w.start}–${w.end}`;
+    return {
+      ...w, pct, available: dispAvail, total: dispTotal,
+      shortLabel: `Week ${w.weekNum} (Day ${rangeLabel})`,
+      tip: `Week ${w.weekNum} (Day ${rangeLabel}): ${pct !== null ? pct + '%' : '—'} coverage (avg ${dispAvail}/${dispTotal} per day)`,
+      label: `W${w.weekNum}`, hasToday
+    };
+  });
+
+  const maxVal = Math.max(...weekItems.map(d => d.available), 1);
+  const { bars, labels } = buildBarChart(weekItems, maxVal, d => d.label, d => d.hasToday);
+
+  // Per-resource table with one column per week
+  let weekResRows = '';
+  resources.forEach(res => {
+    let rowCells = `<td style="font-weight:600">${res.name}</td><td>${res.location || '—'}</td>`;
+    let totalAvail = 0, totalSched = 0;
+    allWeeks.forEach(w => {
+      let present = 0, half = 0, workSched = 0;
+      w.days.forEach(({ day }) => {
+        const { dayName } = getDayInfo(ym, day);
+        if (isOffDay(res, dayName)) return;
+        workSched++;
+        const status = getCell(day, res.name, 'status').trim().toUpperCase();
+        if (status === '') present++;
+        else if (['PN1','PN2','PTO1','PTO2'].includes(status)) half++;
+      });
+      const avail = present + half * 0.5;
+      const pct = workSched > 0 ? Math.round((avail / workSched) * 100) : null;
+      const color = pct === null ? '#aaa' : pct >= 75 ? '#1e8449' : pct >= 40 ? '#b7770d' : '#c0392b';
+      rowCells += `<td style="text-align:center;font-weight:600;color:${color}">${pct !== null ? pct + '%' : '—'}</td>`;
+      totalAvail += avail; totalSched += workSched;
+    });
+    const totalPct = totalSched > 0 ? Math.round((totalAvail / totalSched) * 100) : null;
+    const totalColor = totalPct === null ? '#aaa' : totalPct >= 75 ? '#1e8449' : totalPct >= 40 ? '#b7770d' : '#c0392b';
+    rowCells += `<td style="text-align:center;font-weight:700;color:${totalColor}">${totalPct !== null ? totalPct + '%' : '—'}</td>`;
+    weekResRows += `<tr>${rowCells}</tr>`;
+  });
+
+  const weekHeaders = allWeeks.map(w => `<th style="text-align:center">Week ${w.weekNum}<br><span style="font-weight:normal;font-size:10px">Day ${w.start}–${w.end}</span></th>`).join('');
+
+  return `
+    <div class="trend-chart">${bars}</div>
+    <div class="trend-labels">${labels}</div>
+    <div style="font-size:10px;color:#aaa;margin-top:2px;text-align:center;margin-bottom:4px">Week (Mon–Sun)</div>
+    ${buildSummaryCards(weekItems, 'weekly')}
+    <table class="trend-res-table">
+      <thead><tr><th>Resource</th><th>Location</th>${weekHeaders}<th style="text-align:center">Total</th></tr></thead>
+      <tbody>${weekResRows}</tbody>
+    </table>
+  `;
+}
+
+function closeTrendModal() {
+  document.getElementById('trendOverlay').classList.remove('open');
+}
+document.getElementById('trendOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeTrendModal();
+});
 </script>
 </body>
 </html>
