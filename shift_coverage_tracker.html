@@ -917,7 +917,8 @@ function stampMonthSnapshot(ym) {
       shiftEnd:   res.shiftEnd   || '',
       tz:         res.tz         || '',
       location:   res.location   || '',
-      offDays:    res.offDays    || []
+      offPreset:  res.offPreset  || 'satsun',
+      offCustom:  res.offCustom  || '',
     };
   });
   allData[ym]._snapshot = snap;
@@ -1554,15 +1555,31 @@ function addShiftConfig() {
   if (!start || !end) { alert('Set start and end times.'); return; }
   shiftConfigs.push({ label, start, end, tz });
   saveShiftConfigs(shiftConfigs);
-  document.getElementById('shiftLabel').value = '';
-  document.getElementById('shiftCfgTZ').value = '';
+  document.getElementById('shiftLabel').value    = '';
+  document.getElementById('shiftCfgStart').value = '08:00';
+  document.getElementById('shiftCfgEnd').value   = '17:00';
+  document.getElementById('shiftCfgTZ').value    = '';
   renderResourcePanel();
 }
 
 function removeShiftConfig(i) {
   if (!confirm(`Remove shift "${shiftConfigs[i].label}"?`)) return;
+  const removedLabel = shiftConfigs[i].label;
   shiftConfigs.splice(i, 1);
   saveShiftConfigs(shiftConfigs);
+  // Clear the orphaned shiftLabel from any resource that referenced this config.
+  let resourcesChanged = false;
+  resources.forEach((res, idx) => {
+    if (res.shiftLabel === removedLabel) {
+      resources[idx] = { ...res, shiftLabel: '' };
+      resourcesChanged = true;
+    }
+  });
+  if (resourcesChanged) {
+    saveResources(resources);
+    Object.keys(allData).forEach(ym => stampMonthSnapshot(ym));
+    saveData(allData);
+  }
   renderResourcePanel();
 }
 
@@ -1592,8 +1609,19 @@ function saveEditShiftConfig() {
   const end   = document.getElementById('esEnd').value;
   if (!start || !end) { alert('Set start and end times.'); return; }
   const tz = document.getElementById('esTZ').value;
+  const oldLabel = shiftConfigs[editingShiftIdx].label;
   shiftConfigs[editingShiftIdx] = { label, start, end, tz };
   saveShiftConfigs(shiftConfigs);
+  // Propagate updated times to any resource linked to this shift config
+  // and re-stamp snapshots so month views reflect the change.
+  resources.forEach((res, idx) => {
+    if (res.shiftLabel === oldLabel) {
+      resources[idx] = { ...res, shiftLabel: label, shiftStart: start, shiftEnd: end, tz };
+    }
+  });
+  saveResources(resources);
+  Object.keys(allData).forEach(ym => stampMonthSnapshot(ym));
+  saveData(allData);
   closeEditShiftModal();
   renderResourcePanel();
   renderGrid();
@@ -2082,6 +2110,7 @@ function refreshCoverageCell(day) {
 
 // ── Day modal ────────────────────────────────────────────────────
 function openDayModal(day) {
+  _isEditing = true;
   const ym = currentMonth();
   const { dayName, date } = getDayInfo(ym, day);
   const covPct = calcCoverage(day, dayName);
@@ -2136,6 +2165,7 @@ function openDayModal(day) {
 }
 
 function closeDayModal() {
+  _isEditing = false;
   document.getElementById('dayModal').classList.remove('open');
   document.getElementById('hourTooltip').style.display = 'none';
 }
@@ -2558,17 +2588,20 @@ function addResource() {
   renderChips();
   renderGrid();
   renderLiveBar();
-  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 function removeResource(i) {
   if (!confirm(`Remove "${resources[i].name}"?`)) return;
   resources.splice(i, 1);
   saveResources(resources);
+  // Re-stamp the snapshot for every month so the deleted resource
+  // is removed from month views (otherwise getMonthResources() still
+  // returns the stale snapshot entry and the resource reappears).
+  Object.keys(allData).forEach(ym => stampMonthSnapshot(ym));
+  saveData(allData);
   renderChips();
   renderGrid();
   renderLiveBar();
-  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 let editingIndex = -1;
@@ -2668,11 +2701,14 @@ function saveEditResource() {
   }
 
   saveResources(resources);
+  // Re-stamp snapshots so edits (name, shift, TZ, days off) are reflected
+  // in getMonthResources() for all months that already have a snapshot.
+  Object.keys(allData).forEach(ym => stampMonthSnapshot(ym));
+  saveData(allData);
   closeEditModal();
   renderChips();
   renderGrid();
   renderLiveBar();
-  _isEditing = false; syncPullSilent(); _isEditing = true;
 }
 
 document.getElementById('editOffDays').addEventListener('change', function() {
@@ -2719,6 +2755,7 @@ let _manageActiveTab = 'resources';
 function openManageModal(tab) {
   _isEditing = true;
   _manageActiveTab = tab || 'resources';
+  resources    = loadResources();
   locations    = loadLocations();
   shiftConfigs = loadShiftConfigs();
   document.getElementById('manageOverlay').classList.add('open');
