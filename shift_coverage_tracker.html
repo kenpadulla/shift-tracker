@@ -94,7 +94,7 @@ thead th.res-first {
 /* Fixed left cols */
 th.col-day, td.col-day { width: 30px; text-align: center; font-weight: bold; }
 th.col-dayname, td.col-dayname { width: 38px; text-align: center; }
-th.col-date, td.col-date { width: 78px; text-align: center; font-size: 11px; }
+th.col-date, td.col-date { width: 78px; text-align: center; font-size: 11px; white-space: nowrap; }
 th.col-cov, td.col-cov { width: 66px; text-align: center; }
 
 /* Resource status cols */
@@ -187,18 +187,29 @@ td.col-status.auto-off { background: #ececec !important; }
 td.col-status.auto-off input { color: #bbb; }
 
 .legend {
-  margin: 0 20px 16px; background: #fff; padding: 10px 14px;
-  border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  position: sticky; z-index: 98;
+  margin: 0; padding: 8px 20px;
+  background: #fff; border-bottom: 1px solid #e0e6ef;
+  box-shadow: 0 2px 4px rgba(0,0,0,.07);
   display: flex; gap: 18px; flex-wrap: wrap; font-size: 11px; align-items: center;
 }
 .legend-item { display: flex; align-items: center; gap: 5px; }
+@keyframes rowHighlight {
+  0%   { background: #fff3cd; }
+  25%  { background: #ffe082; }
+  50%  { background: #fff3cd; }
+  75%  { background: #ffe082; }
+  100% { background: transparent; }
+}
+tr.row-highlight td { animation: rowHighlight 1.2s ease-out forwards; }
+div.row-highlight { animation: rowHighlight 1.2s ease-out forwards; }
 .legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ccc; }
 
 .no-resources { padding: 30px; text-align: center; color: #999; font-size: 14px; }
 
 /* Live status bar */
 .live-bar {
-  margin: 0 20px 8px; display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 10px 20px 8px; display: flex; gap: 8px; flex-wrap: wrap;
 }
 .live-box {
   background: #fff; border-radius: 6px; padding: 7px 12px; flex: 1; min-width: 160px;
@@ -224,15 +235,20 @@ td.col-status.auto-off input { color: #bbb; }
 /* Day view popup */
 .day-modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.5); z-index: 2000; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.5); z-index: 2000;
+  align-items: flex-start; justify-content: center;
+  padding-top: var(--header-offset, 60px);
+  padding-bottom: 20px;
+  overflow-y: auto;
 }
 .day-modal-overlay.open { display: flex; }
 .day-modal {
-  background: #fff; border-radius: 8px; width: 1100px; max-width: 97vw; max-height: 92vh;
+  background: #fff; border-radius: 8px; width: 1400px; max-width: 99vw; max-height: calc(100vh - var(--header-offset, 60px) - 20px);
   overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.3); display: flex; flex-direction: column;
 }
+.hour-grid-wrap { min-width: 0; }
 .day-modal-header {
-  background: #1a3c5e; color: #fff; padding: 14px 18px;
+  background: #2c7873; color: #fff; padding: 14px 18px;
   display: flex; align-items: center; justify-content: space-between;
   border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 1;
 }
@@ -261,16 +277,16 @@ td.col-status.auto-off input { color: #bbb; }
 
 /* Hour timeline */
 .hour-grid { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-.hour-grid th { background: #1a3c5e; color: #fff; font-size: 11px; padding: 5px 4px; text-align: center; border: 1px solid #0d2438; white-space: nowrap; }
+.hour-grid th { background: #1a3c5e; color: #fff; font-size: 11px; padding: 5px 6px; text-align: center; border: 1px solid #0d2438; white-space: nowrap; }
 .hour-grid th.hg-res { background: #264d73; text-align: left; padding-left: 8px; min-width: 90px; }
 .hour-grid td { border: 1px solid #c5cfe0; padding: 0; height: 28px; }
 .hour-grid td.hg-res-name { font-size: 11px; font-weight: 600; padding: 4px 8px; background: #f4f7fc; white-space: nowrap; }
 .hour-block { width: 100%; height: 100%; display: block; }
 .hour-block.present { background: #a9dfbf; }
-.hour-block.pn1     { background: linear-gradient(to right, #d5d8dc 50%, #a9dfbf 50%); }
-.hour-block.pn2     { background: linear-gradient(to right, #a9dfbf 50%, #d5d8dc 50%); }
-.hour-block.pto1    { background: linear-gradient(to right, #d5d8dc 50%, #a9dfbf 50%); }
-.hour-block.pto2    { background: linear-gradient(to right, #a9dfbf 50%, #d5d8dc 50%); }
+.hour-block.pn1     { background: linear-gradient(to right, #d5d8dc 50%, #b0b8c1 50%); }
+.hour-block.pn2     { background: linear-gradient(to right, #b0b8c1 50%, #d5d8dc 50%); }
+.hour-block.pto1    { background: linear-gradient(to right, #d5d8dc 50%, #b0b8c1 50%); }
+.hour-block.pto2    { background: linear-gradient(to right, #b0b8c1 50%, #d5d8dc 50%); }
 .hour-block.hol     { background: #a8dadc; }
 .hour-block.absent  { background: #f1948a; }
 .hour-block.off     { background: #ececec; }
@@ -382,30 +398,40 @@ tbody tr:active td { background: #c8daf5 !important; }
 /* Edit modal */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.45); z-index: 1000;
+  align-items: flex-start; justify-content: center;
+  padding-top: var(--header-offset, 60px);
+  padding-bottom: 20px;
+  overflow-y: auto;
 }
 .modal-overlay.open { display: flex; }
 .modal {
   background: #fff; border-radius: 8px; padding: 24px; width: 380px; max-width: 95vw;
   box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  margin: auto 0;
 }
-.modal h3 { font-size: 15px; color: #1a3c5e; margin-bottom: 16px; }
+.modal h3 { font-size: 15px; color: #fff; background: #2c7873; margin: -24px -24px 16px; padding: 14px 20px; border-radius: 8px 8px 0 0; }
 .modal label { display: flex; flex-direction: column; font-size: 11px; color: #555; gap: 3px; margin-bottom: 10px; }
 .modal input, .modal select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
 .modal input:disabled, .modal select:disabled { background: #f0f2f5; color: #999; cursor: not-allowed; border-color: #ddd; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
 /* Manage Resources modal */
-#manageModal { width: 860px; max-width: 97vw; max-height: 90vh; overflow-y: auto; padding: 0; }
+#manageModal {
+  width: 820px; max-width: 94vw;
+  height: calc(100vh - var(--header-offset, 60px) - 48px);
+  max-height: calc(100vh - var(--header-offset, 60px) - 48px);
+  display: flex; flex-direction: column; overflow: hidden; padding: 0;
+}
 #manageModal .mm-header {
-  background: #1a3c5e; color: #fff; padding: 14px 20px;
+  background: #2c7873; color: #fff; padding: 14px 20px;
   display: flex; align-items: center; justify-content: space-between;
-  border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 1;
+  border-radius: 8px 8px 0 0; flex-shrink: 0;
 }
 #manageModal .mm-header h3 { font-size: 15px; margin: 0; }
 #manageModal .mm-tabs {
   display: flex; border-bottom: 2px solid #e0e6ef; background: #f8faff;
-  padding: 0 20px; gap: 4px;
+  padding: 0 20px; gap: 4px; flex-shrink: 0;
 }
 #manageModal .mm-tab {
   padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
@@ -414,15 +440,15 @@ tbody tr:active td { background: #c8daf5 !important; }
 }
 #manageModal .mm-tab.active { color: #1a3c5e; border-bottom-color: #1a3c5e; }
 #manageModal .mm-tab:hover:not(.active) { color: #1a3c5e; }
-#manageModal .mm-body { padding: 20px; }
+#manageModal .mm-body { padding: 20px; flex: 1; overflow-y: auto; }
 
 .chip button.btn-edit { background: #2980b9; color: #fff; border-radius: 50%; padding: 0; width: 16px; height: 16px; font-size: 10px; line-height: 16px; text-align: center; }
 .btn-light.filter-active { background: #2980b9; color: #fff; border-color: #2471a3; }
 
 /* Trend modal */
-#trendModal { width: 1200px; max-width: 97vw; max-height: 94vh; overflow-y: auto; padding: 0; }
+#trendModal { width: 1200px; max-width: 97vw; max-height: calc(100vh - var(--header-offset, 60px) - 20px); overflow-y: auto; padding: 0; }
 #trendModal .tm-header {
-  background: #1a3c5e; color: #fff; padding: 14px 20px;
+  background: #2c7873; color: #fff; padding: 14px 20px;
   display: flex; align-items: center; justify-content: space-between;
   border-radius: 8px 8px 0 0; position: sticky; top: 0; z-index: 1;
 }
@@ -475,6 +501,12 @@ tbody tr:active td { background: #c8daf5 !important; }
     <input type="month" id="monthPicker" />
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+    <div style="text-align:right">
+      <div style="font-size:10px;color:#aed6f1;text-transform:uppercase;letter-spacing:.4px;font-weight:600">Current Time</div>
+      <div id="headerClock" style="font-size:18px;font-weight:700;color:#fff;letter-spacing:1px;line-height:1.2"></div>
+      <div id="headerClockDate" style="font-size:10px;color:#aed6f1;margin-top:1px"></div>
+    </div>
+    <div style="width:1px;background:rgba(255,255,255,.2);align-self:stretch"></div>
     <div>
       <label style="font-size:11px;color:#aed6f1;display:block">View Timezone</label>
       <select id="tzSelect" onchange="onTZChange()" style="padding:5px 8px;border:none;border-radius:4px;font-size:12px;background:#fff;color:#222;min-width:180px"></select>
@@ -598,61 +630,34 @@ tbody tr:active td { background: #c8daf5 !important; }
             </div>
           </div>
         </div>
-        <div id="addResourceRow" style="display:none;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-bottom:12px">
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-            <label style="font-size:11px;color:#555">Name
-              <input type="text" id="newName" placeholder="e.g. TJ" style="width:120px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
-            <label style="font-size:11px;color:#555">Shift
-              <select id="newShiftPreset" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
-                <option value="">— manual —</option>
-              </select>
-            </label>
-            <label style="font-size:11px;color:#555">Start
-              <input type="time" id="newShiftStart" value="08:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
-            <label style="font-size:11px;color:#555">End
-              <input type="time" id="newShiftEnd" value="17:00" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
-            <label style="font-size:11px;color:#555">Timezone
-              <select id="newTZ" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
-            </label>
-            <label style="font-size:11px;color:#555">Days Off
-              <select id="newOffDays" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
-                <option value="frisat">Fri–Sat</option>
-                <option value="satsun">Sat–Sun</option>
-                <option value="sunmon">Sun–Mon</option>
-                <option value="montuew">Mon–Tue</option>
-                <option value="thuefri">Thu–Fri</option>
-                <option value="none">No fixed off</option>
-                <option value="custom">Custom…</option>
-              </select>
-            </label>
-            <label id="customOffLabel" style="display:none;font-size:11px;color:#555">Custom
-              <input type="text" id="customOff" placeholder="sat,sun" style="width:80px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
-            <label style="font-size:11px;color:#555">Location
-              <select id="newLocation" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px">
-                <option value="">— none —</option>
-              </select>
-            </label>
-            <div style="display:flex;gap:6px;padding-bottom:1px">
-              <button class="btn-success" onclick="addResource()">Save</button>
-              <button class="btn-light" onclick="hideAddResourceRow()">Cancel</button>
-            </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:7px 12px">
+          <span style="font-size:11px;font-weight:700;color:#1a3c5e;white-space:nowrap">Preview TZ:</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex:1;max-width:280px">
+            <select id="resListTZ" onchange="renderResourceList()" style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:100%"></select>
+            <span id="resListTZNote" style="font-size:10px;color:#888"></span>
           </div>
         </div>
         <table id="resourceListTable" style="width:100%;border-collapse:collapse;font-size:12px">
           <thead>
             <tr style="background:#1a3c5e;color:#fff;text-align:left">
               <th style="padding:7px 10px;border:1px solid #0d2438;width:32px;text-align:center"><input type="checkbox" id="resCheckAll" title="Select all" onchange="toggleAllResChecks(this.checked)" style="cursor:pointer" /></th>
-              <th style="padding:7px 10px;border:1px solid #0d2438">Name</th>
-              <th style="padding:7px 10px;border:1px solid #0d2438">Shift</th>
-              <th style="padding:7px 10px;border:1px solid #0d2438">Time</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;cursor:pointer;user-select:none" onclick="sortResourceList('name')" id="resCol-name">Name</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;cursor:pointer;user-select:none" onclick="sortResourceList('shift')" id="resCol-shift">Shift</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;cursor:pointer;user-select:none" onclick="sortResourceList('time')" id="resCol-time">Time</th>
               <th style="padding:7px 10px;border:1px solid #0d2438">In View TZ</th>
-              <th style="padding:7px 10px;border:1px solid #0d2438">Days Off</th>
-              <th style="padding:7px 10px;border:1px solid #0d2438">Location</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;cursor:pointer;user-select:none" onclick="sortResourceList('offdays')" id="resCol-offdays">Days Off</th>
+              <th style="padding:7px 10px;border:1px solid #0d2438;cursor:pointer;user-select:none" onclick="sortResourceList('location')" id="resCol-location">Location</th>
               <th style="padding:7px 10px;border:1px solid #0d2438;width:70px">Actions</th>
+            </tr>
+            <tr style="background:#0f2a42">
+              <th style="padding:4px 6px;border:1px solid #0d2438"></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"><input type="text" id="resCf-name" placeholder="Filter…" oninput="applyResColFilter()" style="width:100%;padding:3px 6px;border:1px solid #2e5f8a;border-radius:3px;font-size:11px;background:#1a3c5e;color:#fff;outline:none" /></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"><input type="text" id="resCf-shift" placeholder="Filter…" oninput="applyResColFilter()" style="width:100%;padding:3px 6px;border:1px solid #2e5f8a;border-radius:3px;font-size:11px;background:#1a3c5e;color:#fff;outline:none" /></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"><input type="text" id="resCf-time" placeholder="Filter…" oninput="applyResColFilter()" style="width:100%;padding:3px 6px;border:1px solid #2e5f8a;border-radius:3px;font-size:11px;background:#1a3c5e;color:#fff;outline:none" /></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"><input type="text" id="resCf-offdays" placeholder="Filter…" oninput="applyResColFilter()" style="width:100%;padding:3px 6px;border:1px solid #2e5f8a;border-radius:3px;font-size:11px;background:#1a3c5e;color:#fff;outline:none" /></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438"><input type="text" id="resCf-location" placeholder="Filter…" oninput="applyResColFilter()" style="width:100%;padding:3px 6px;border:1px solid #2e5f8a;border-radius:3px;font-size:11px;background:#1a3c5e;color:#fff;outline:none" /></th>
+              <th style="padding:4px 6px;border:1px solid #0d2438;text-align:center"><button onclick="clearResColFilters()" title="Clear all filters" style="background:#2e5f8a;border:none;color:#aed6f1;border-radius:3px;padding:2px 6px;font-size:10px;cursor:pointer">✕</button></th>
             </tr>
           </thead>
           <tbody id="resourceListBody"></tbody>
@@ -662,23 +667,17 @@ tbody tr:active td { background: #c8daf5 !important; }
 
       <!-- Tab: Shifts -->
       <div id="mmTab-shifts" style="display:none">
-        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-width:360px">
-          <span style="font-size:13px;font-weight:700;color:#1a3c5e;margin-bottom:4px">Add Shift Configuration</span>
-          <label style="font-size:11px;color:#555">Label
-            <input type="text" id="shiftLabel" placeholder="e.g. US Morning" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-          </label>
-          <div style="display:flex;gap:8px">
-            <label style="font-size:11px;color:#555;flex:1">Start
-              <input type="time" id="shiftCfgStart" value="08:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
-            <label style="font-size:11px;color:#555;flex:1">End
-              <input type="time" id="shiftCfgEnd" value="17:00" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px" />
-            </label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:13px;font-weight:700;color:#1a3c5e">Shift Configurations</span>
+          <button class="btn-success" onclick="showAddShiftModal()">+ Add Shift</button>
+        </div>
+        <!-- Preview TZ above list -->
+        <div style="display:flex;align-items:center;gap:8px;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:7px 10px;margin-bottom:12px;max-width:360px">
+          <span style="font-size:11px;font-weight:700;color:#1a3c5e;white-space:nowrap">Preview TZ:</span>
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+            <select id="shiftListTZ" onchange="renderShiftConfigList()" style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:100%"></select>
+            <span id="shiftListTZNote" style="font-size:10px;color:#888"></span>
           </div>
-          <label style="font-size:11px;color:#555">Timezone
-            <select id="shiftCfgTZ" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin-top:2px"></select>
-          </label>
-          <button class="btn-success" onclick="addShiftConfig()" style="margin-top:4px;align-self:flex-start">+ Add Shift</button>
         </div>
         <div id="shiftConfigList" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
@@ -734,9 +733,43 @@ tbody tr:active td { background: #c8daf5 !important; }
   </div>
 </div>
 
+<!-- Add Shift Config Modal -->
+<div class="modal-overlay" id="addShiftModal" onclick="if(event.target===this)closeAddShiftModal()">
+  <div class="modal" style="width:560px;max-width:96vw">
+    <h3>Add Shift Configuration</h3>
+    <label>Label
+      <input type="text" id="shiftLabel" placeholder="e.g. US Morning" />
+    </label>
+    <div style="display:flex;gap:8px">
+      <label style="flex:1">Start
+        <input type="time" id="shiftCfgStart" value="08:00" />
+      </label>
+      <label style="flex:1">End
+        <input type="time" id="shiftCfgEnd" value="17:00" />
+      </label>
+    </div>
+    <label>Timezone
+      <select id="shiftCfgTZ"></select>
+    </label>
+    <div>
+      <div style="font-size:11px;color:#555;margin-bottom:4px">Work Days <span style="color:#888;font-weight:400">(off days auto-derived)</span></div>
+      <div id="shiftCfgDays" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    </div>
+    <div style="background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-top:12px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px">Preview TZ</div>
+      <select id="shiftCfgPreviewTZ" onchange="updateShiftCfgPreview()" style="width:100%;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"></select>
+      <div id="shiftCfgPreviewResult" style="margin-top:8px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-light" onclick="closeAddShiftModal()">Cancel</button>
+      <button class="btn-success" onclick="addShiftConfig()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Shift Config Modal -->
 <div class="modal-overlay" id="editShiftModal">
-  <div class="modal" style="width:380px">
+  <div class="modal" style="width:560px;max-width:96vw">
     <h3>Edit Shift Configuration</h3>
     <label>Label
       <input type="text" id="esLabel" placeholder="e.g. US Morning" />
@@ -752,9 +785,79 @@ tbody tr:active td { background: #c8daf5 !important; }
     <label>Timezone
       <select id="esTZ"></select>
     </label>
+    <div>
+      <div style="font-size:11px;color:#555;margin-bottom:4px">Work Days <span style="color:#888;font-weight:400">(off days auto-derived)</span></div>
+      <div id="esDays" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    </div>
+    <div style="background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px;margin-top:12px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px">Preview TZ</div>
+      <select id="esPreviewTZ" onchange="updateEsPreview()" style="width:100%;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"></select>
+      <div id="esPreviewResult" style="margin-top:8px"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn-light" onclick="closeEditShiftModal()">Cancel</button>
       <button class="btn-success" onclick="saveEditShiftConfig()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Resource Modal -->
+<div class="modal-overlay" id="addResourceModal" onclick="if(event.target===this)hideAddResourceRow()">
+  <div class="modal" style="width:420px">
+    <h3>Add Resource</h3>
+    <label>Name
+      <input type="text" id="newName" placeholder="e.g. Ken" />
+    </label>
+
+    <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Shift</div>
+      <label>Use Shift Configuration
+        <select id="newShiftPreset">
+          <option value="">— manual entry —</option>
+        </select>
+      </label>
+      <div style="display:flex;gap:8px">
+        <label style="flex:1">Start
+          <input type="time" id="newShiftStart" value="08:00" />
+        </label>
+        <label style="flex:1">End
+          <input type="time" id="newShiftEnd" value="17:00" />
+        </label>
+      </div>
+      <label>Timezone
+        <select id="newTZ"></select>
+      </label>
+    </div>
+
+    <div id="newDaysOffSection" style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Work Days <span id="newDaysOffNote" style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0">(off days auto-derived)</span></div>
+      <div id="newWorkDays" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px"></div>
+      <div id="newOffDaysPreview" style="font-size:11px;color:#c0392b;font-weight:600;min-height:16px"></div>
+      <input type="hidden" id="newOffDays" value="satsun" />
+      <input type="hidden" id="customOff" value="" />
+      <label id="customOffLabel" style="display:none"></label>
+    </div>
+
+    <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Location</div>
+      <label>Location
+        <select id="newLocation">
+          <option value="">— none —</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px">
+        <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px">Preview TZ</div>
+        <select id="newResPreviewTZ" onchange="updateNewResPreview()" style="width:100%;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"></select>
+        <div id="newResPreviewResult" style="margin-top:8px;overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-light" onclick="hideAddResourceRow()">Cancel</button>
+      <button class="btn-success" onclick="addResource()">Save</button>
     </div>
   </div>
 </div>
@@ -770,7 +873,7 @@ tbody tr:active td { background: #c8daf5 !important; }
     <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
       <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Shift</div>
       <label>Use Shift Configuration
-        <select id="editShiftPreset">
+        <select id="editShiftPreset" onchange="onEditShiftPresetChange()">
           <option value="">— manual entry —</option>
         </select>
       </label>
@@ -787,22 +890,21 @@ tbody tr:active td { background: #c8daf5 !important; }
       </label>
     </div>
 
+    <div id="editDaysOffSection" style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
+      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Work Days <span id="editDaysOffNote" style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0">(off days auto-derived)</span></div>
+      <div id="editWorkDays" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px"></div>
+      <div id="editOffDaysPreview" style="font-size:11px;color:#c0392b;font-weight:600;min-height:16px"></div>
+      <input type="hidden" id="editOffDays" />
+      <input type="hidden" id="editCustomOff" />
+      <label id="editCustomOffLabel" style="display:none"></label>
+    </div>
+
     <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
-      <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Days Off</div>
-      <label>Pattern
-        <select id="editOffDays">
-          <option value="frisat">Fri–Sat</option>
-          <option value="satsun">Sat–Sun</option>
-          <option value="sunmon">Sun–Mon</option>
-          <option value="montuew">Mon–Tue</option>
-          <option value="thuefri">Thu–Fri</option>
-          <option value="none">No fixed off days</option>
-          <option value="custom">Custom…</option>
-        </select>
-      </label>
-      <label id="editCustomOffLabel" style="display:none">Custom (e.g. sat,sun)
-        <input type="text" id="editCustomOff" placeholder="sat,sun" />
-      </label>
+      <div style="background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:10px">
+        <div style="font-size:11px;font-weight:700;color:#1a3c5e;margin-bottom:6px">Preview TZ</div>
+        <select id="editResPreviewTZ" onchange="updateEditResPreview()" style="width:100%;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px"></select>
+        <div id="editResPreviewResult" style="margin-top:8px;overflow-x:auto"></div>
+      </div>
     </div>
 
     <div style="border-top:1px solid #eee;margin:10px 0;padding-top:10px">
@@ -910,7 +1012,7 @@ function saveData(d) { localStorage.setItem(LS_DATA, JSON.stringify(d)); showSav
 function stampMonthSnapshot(ym) {
   if (!allData[ym]) allData[ym] = {};
   const snap = {};
-  loadResources().forEach(res => {
+  resources.forEach(res => {
     snap[res.name] = {
       shiftLabel: res.shiftLabel || '',
       shiftStart: res.shiftStart || '',
@@ -1017,7 +1119,6 @@ function populateTZDropdown() {
     sel.appendChild(opt);
   });
   // Also populate IANA selects in resource/shift forms
-  populateIANASelect(document.getElementById('shiftCfgTZ'), '');
   populateIANASelect(document.getElementById('newTZ'), '');
   populateIANASelect(document.getElementById('editTZ'), '');
 }
@@ -1061,23 +1162,64 @@ function convertShiftHour(h, resourceIANA) {
   } catch { return h; }
 }
 
+// Format fractional hour to HH:MM (exact minutes, not rounded to :30)
+function fmtHour(h) {
+  const norm = ((h % 24) + 24) % 24;
+  const hh   = Math.floor(norm);
+  const mm   = Math.round((norm - hh) * 60);
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+// Returns the UTC offset difference (viewTZ - sourceTZ) in fractional hours
+function tzOffsetDiff(sourceTZ) {
+  if (!sourceTZ) return 0;
+  const now      = new Date();
+  const viewIANA = selectedTZ === 'Local (browser)' ? null : selectedTZ;
+  const viewOff  = viewIANA
+    ? getUTCOffset(viewIANA, now)
+    : -now.getTimezoneOffset() / 60;
+  const srcOff   = getUTCOffset(sourceTZ, now);
+  return viewOff - srcOff;
+}
+
+// Day offset as integer (-1, 0, +1) for a shift hour given offset diff
+function dayOffset(srcH, diff) {
+  const raw = srcH + diff;          // unwrapped converted hour
+  if (raw >= 24)  return  1;
+  if (raw <  0)   return -1;
+  return 0;
+}
+
+// Day offset label string
+function dayOffsetLabel(srcH, diff) {
+  const d = dayOffset(srcH, diff);
+  if (d ===  1) return '+1d';
+  if (d === -1) return '-1d';
+  return '';
+}
+
 // Format a resource's shift time in the currently selected view TZ
 function formatShiftInViewTZ(res) {
   if (!res.shiftStart || !res.shiftEnd) return '';
-  const fmt = h => `${String(Math.floor(((h % 24) + 24) % 24)).padStart(2,'0')}:${(h % 1 >= 0.5) ? '30' : '00'}`;
   const viewSuffix = selectedTZ === 'Local (browser)' ? 'Local' : selectedTZ.split('/').pop().replace(/_/g, ' ');
-  // If no source TZ on the resource, treat times as already in the view TZ
   if (!res.tz) {
     return `${res.shiftStart}–${res.shiftEnd} ${viewSuffix}`;
   }
-  const startH = convertShiftHour(parseTime(res.shiftStart), res.tz);
-  const endH   = convertShiftHour(parseTime(res.shiftEnd),   res.tz);
+  const diff    = tzOffsetDiff(res.tz);
+  const srcStartH = parseTime(res.shiftStart);
+  const srcEndH   = parseTime(res.shiftEnd);
+  const startH    = convertShiftHour(srcStartH, res.tz);
+  const endH      = convertShiftHour(srcEndH,   res.tz);
   if (startH === null || endH === null) return `${res.shiftStart}–${res.shiftEnd} ${viewSuffix}`;
-  return `${fmt(startH)}–${fmt(endH)} ${viewSuffix}`;
+  const startDay = dayOffsetLabel(srcStartH, diff);
+  const endDay   = dayOffsetLabel(srcEndH,   diff);
+  const startStr = `${fmtHour(startH)}${startDay ? ' ('+startDay+')' : ''}`;
+  const endStr   = `${fmtHour(endH)}${endDay   ? ' ('+endDay+')'   : ''}`;
+  return `${startStr}–${endStr} ${viewSuffix}`;
 }
 
 function populateIANASelect(sel, currentVal) {
-  sel.innerHTML = '<option value="">— same as view —</option>';
+  sel.innerHTML = `<option value="">— Same as view TZ (${tzLabel(selectedTZ)}) —</option>`;
   COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
     const opt = document.createElement('option');
     opt.value = tz;
@@ -1092,9 +1234,86 @@ function onTZChange() {
   const tzNow = nowInTZ();
   const ym = `${tzNow.year}-${String(tzNow.month).padStart(2,'0')}`;
   document.getElementById('monthPicker').value = ym;
-  renderGrid();
-  renderLiveBar();
+  updateHeaderClock();
+  scheduleRender();
   renderResourcePanel();
+}
+
+// DAY index map: mon=1..sun=0 (JS getDay() convention)
+const DAY_IDX = { sun:0, mon:1, tue:2, wed:3, thu:4, fri:5, sat:6 };
+const DAY_NAMES_JS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Build per-work-day conversion table HTML.
+// workDays: array of 'mon'..'sun' strings (selected work days).
+// If empty, falls back to ALL_DAYS.
+function buildShiftPreviewTable(start, end, sourceTZ, previewTZ, workDays) {
+  if (!start || !end) return '';
+
+  const viewSuffix = !previewTZ || previewTZ === 'Local (browser)'
+    ? 'Local'
+    : previewTZ.split('/').pop().replace(/_/g, ' ');
+  const srcSuffix = !sourceTZ
+    ? viewSuffix
+    : sourceTZ.split('/').pop().replace(/_/g, ' ');
+
+  const srcStartH = parseTime(start);
+  const srcEndH   = parseTime(end);
+
+  // Compute the UTC offset diff (previewTZ - sourceTZ)
+  const savedTZ = selectedTZ;
+  selectedTZ = previewTZ || selectedTZ;
+  const diff = sourceTZ ? tzOffsetDiff(sourceTZ) : 0;
+  const convStartH = sourceTZ ? convertShiftHour(srcStartH, sourceTZ) : srcStartH;
+  const convEndH   = sourceTZ ? convertShiftHour(srcEndH,   sourceTZ) : srcEndH;
+  selectedTZ = savedTZ;
+
+  if (convStartH === null || convEndH === null) return `${start}–${end} ${viewSuffix}`;
+
+  const startDayDelta = dayOffset(srcStartH, diff);
+  const endDayDelta   = dayOffset(srcEndH,   diff);
+
+  const days = (workDays && workDays.length) ? workDays : ALL_DAYS;
+
+  const rows = days.map(d => {
+    const srcDayIdx  = DAY_IDX[d];
+    const convStartDayIdx = ((srcDayIdx + startDayDelta) % 7 + 7) % 7;
+    const convEndDayIdx   = ((srcDayIdx + endDayDelta)   % 7 + 7) % 7;
+    const srcDay   = DAY_NAMES_JS[srcDayIdx];
+    const convStartDay = DAY_NAMES_JS[convStartDayIdx];
+    const convEndDay   = DAY_NAMES_JS[convEndDayIdx];
+    const convStartStr = `${convStartDay} ${fmtHour(convStartH)}`;
+    const convEndStr   = `${convEndDay} ${fmtHour(convEndH)}`;
+    return `<tr>
+      <td style="padding:2px 8px 2px 0;font-weight:600;color:#1a3c5e;white-space:nowrap">${srcDay}</td>
+      <td style="padding:2px 4px;color:#555;white-space:nowrap">${start}–${end} <span style="color:#888;font-size:10px">${srcSuffix}</span></td>
+      <td style="padding:2px 4px;color:#888">→</td>
+      <td style="padding:2px 0 2px 4px;font-weight:600;color:#2980b9;white-space:nowrap">${convStartStr}–${convEndStr} <span style="color:#888;font-size:10px">${viewSuffix}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `<table style="border-collapse:collapse;font-size:11px;width:100%">${rows}</table>`;
+}
+
+// Legacy single-line format (still used by shift list rows)
+function formatShiftPreviewRich(start, end, sourceTZ, previewTZ) {
+  if (!start || !end) return '';
+  const viewSuffix = !previewTZ || previewTZ === 'Local (browser)'
+    ? 'Local' : previewTZ.split('/').pop().replace(/_/g, ' ');
+  if (!sourceTZ) return `${start}–${end} ${viewSuffix}`;
+  const savedTZ = selectedTZ;
+  selectedTZ = previewTZ || selectedTZ;
+  const diff = tzOffsetDiff(sourceTZ);
+  const srcStartH = parseTime(start);
+  const srcEndH   = parseTime(end);
+  const convStartH = convertShiftHour(srcStartH, sourceTZ);
+  const convEndH   = convertShiftHour(srcEndH,   sourceTZ);
+  selectedTZ = savedTZ;
+  if (convStartH === null || convEndH === null) return `${start}–${end} ${viewSuffix}`;
+  const startDayDelta = dayOffset(srcStartH, diff);
+  const endDayDelta   = dayOffset(srcEndH,   diff);
+  const startDayStr = startDayDelta !== 0 ? `${DAY_NAMES_JS[((0 + startDayDelta) % 7 + 7) % 7]} ` : '';
+  const endDayStr   = endDayDelta   !== 0 ? `${DAY_NAMES_JS[((0 + endDayDelta)   % 7 + 7) % 7]} ` : '';
+  return `${startDayStr}${fmtHour(convStartH)} – ${endDayStr}${fmtHour(convEndH)} ${viewSuffix}`;
 }
 
 // ── Advanced filter ───────────────────────────────────────────────
@@ -1377,6 +1596,64 @@ const OFF_PRESETS = {
   none:    [],
 };
 
+const ALL_DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+const DAY_LABEL = { mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun' };
+
+function workDaysToOffPreset(workDays) {
+  const off = ALL_DAYS.filter(d => !workDays.includes(d));
+  if (off.length === 0) return { offPreset: 'none', offCustom: '' };
+  // Try to match a named preset (off days must match exactly)
+  for (const [key, days] of Object.entries(OFF_PRESETS)) {
+    if (key === 'none') continue;
+    if (days.length === off.length && days.every(d => off.includes(d))) {
+      return { offPreset: key, offCustom: '' };
+    }
+  }
+  return { offPreset: 'custom', offCustom: off.join(',') };
+}
+
+function offPresetToWorkDays(offPreset, offCustom) {
+  if (offPreset === 'none') return [...ALL_DAYS];
+  if (offPreset === 'custom') {
+    const offList = (offCustom || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+    return ALL_DAYS.filter(d => !offList.includes(d));
+  }
+  const off = OFF_PRESETS[offPreset] || [];
+  return ALL_DAYS.filter(d => !off.includes(d));
+}
+
+function renderDayCheckboxes(containerId, selectedWorkDays) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = ALL_DAYS.map(d => {
+    const checked = selectedWorkDays.includes(d) ? 'checked' : '';
+    return `<label style="display:flex;align-items:center;gap:2px;font-size:11px;font-weight:600;cursor:pointer;
+      background:${checked ? '#1a3c5e' : '#e8eef5'};color:${checked ? '#fff' : '#555'};
+      border:1px solid ${checked ? '#1a3c5e' : '#c5cfe0'};border-radius:4px;padding:3px 7px;user-select:none;
+      transition:background .15s">
+      <input type="checkbox" value="${d}" ${checked} style="display:none" onchange="onDayCheckChange(this)">
+      ${DAY_LABEL[d]}
+    </label>`;
+  }).join('');
+}
+
+function onDayCheckChange(cb) {
+  const lbl = cb.closest('label');
+  if (lbl) {
+    lbl.style.background  = cb.checked ? '#1a3c5e' : '#e8eef5';
+    lbl.style.color       = cb.checked ? '#fff' : '#555';
+    lbl.style.borderColor = cb.checked ? '#1a3c5e' : '#c5cfe0';
+  }
+}
+
+function setWorkDaysDisabled(containerId, disabled) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.style.opacity        = disabled ? '0.45' : '1';
+  el.style.pointerEvents  = disabled ? 'none' : '';
+  el.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.disabled = disabled; });
+}
+
 function offDaysFor(res) {
   if (res.offPreset === 'custom') {
     return (res.offCustom || '').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
@@ -1473,47 +1750,194 @@ function renderResourcePanel() {
 }
 
 function renderShiftConfigList() {
+  // Populate the preview TZ dropdown if not yet done
+  const tzSel = document.getElementById('shiftListTZ');
+  if (tzSel && tzSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    tzSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      tzSel.appendChild(opt);
+    });
+  }
+
+  // Determine the TZ to convert into
+  const previewTZ = tzSel ? tzSel.value : '';
+  const effectiveTZ = previewTZ || selectedTZ; // fall back to main view TZ
+  const tzNote = document.getElementById('shiftListTZNote');
+  if (tzNote) {
+    tzNote.textContent = previewTZ
+      ? `Showing times in ${effectiveTZ.split('/').pop().replace(/_/g,' ')}`
+      : `Defaulting to view TZ: ${tzLabel(selectedTZ)}`;
+  }
+
+  // Temporarily override selectedTZ for formatShiftInViewTZ conversion
+  const savedTZ = selectedTZ;
+  selectedTZ = effectiveTZ;
+
   const el = document.getElementById('shiftConfigList');
-  if (!el) return;
+  if (!el) { selectedTZ = savedTZ; return; }
   if (shiftConfigs.length === 0) {
     el.innerHTML = '<div style="color:#999;font-size:11px;padding:4px 0">No shift configurations yet.</div>';
+    selectedTZ = savedTZ;
     return;
   }
   el.innerHTML = '';
-  shiftConfigs.forEach((cfg, i) => {
+  const sorted = shiftConfigs
+    .map((cfg, i) => ({ cfg, i }))
+    .sort((a, b) => a.cfg.label.localeCompare(b.cfg.label));
+  sorted.forEach(({ cfg, i }) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:5px;padding:7px 10px;font-size:12px';
+    const cfgNative    = `${cfg.start}–${cfg.end}${cfg.tz ? ' ('+cfg.tz.split('/').pop().replace(/_/g,' ')+')' : ' (no TZ)'}`;
     const cfgConverted = formatShiftInViewTZ({ shiftStart: cfg.start, shiftEnd: cfg.end, tz: cfg.tz });
-    const cfgNative = `${cfg.start}–${cfg.end}${cfg.tz ? ' ('+cfg.tz.split('/').pop().replace(/_/g,' ')+')' : ''}`;
+    const isSame = !cfgConverted || cfgConverted === cfgNative;
+    const workDays = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+    const offDays  = ALL_DAYS.filter(d => !workDays.includes(d));
+    const workStr  = workDays.map(d => DAY_LABEL[d]).join(', ') || 'None';
+    const offStr   = offDays.map(d => DAY_LABEL[d]).join(', ')  || 'None';
     row.innerHTML = `
-      <div style="flex:1">
-        <strong style="color:#1a3c5e">${cfg.label}</strong>
-        <span style="color:#555;margin-left:8px">⏰ ${cfgNative}</span>
-        ${cfgConverted && cfgConverted !== cfgNative ? `<span style="color:#2980b9;margin-left:6px;font-size:11px">→ ${cfgConverted}</span>` : ''}
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+          <strong style="color:#1a3c5e">${cfg.label}</strong>
+          <span style="color:#555">⏰ ${cfgNative}</span>
+          ${!isSame ? `<span style="color:#2980b9;font-size:11px;font-weight:600">→ ${cfgConverted}</span>` : ''}
+        </div>
+        <div style="font-size:10px;color:#666;display:flex;gap:10px">
+          <span>🟢 Work: <strong>${workStr}</strong></span>
+          <span>🔴 Off: <strong style="color:#c0392b">${offStr || '—'}</strong></span>
+        </div>
       </div>
       <button title="Edit" class="icon-btn" style="color:#1a3c5e" onclick="editShiftConfig(${i})">✏️</button>
       <button title="Remove" class="icon-btn icon-btn-danger" style="color:#c0392b;font-size:13px" onclick="removeShiftConfig(${i})">✕</button>
     `;
     el.appendChild(row);
   });
+
+  selectedTZ = savedTZ; // restore
+}
+
+let _resSort = { col: 'name', dir: 1 }; // dir: 1=asc, -1=desc
+let _resColFilters = { name: '', shift: '', time: '', offdays: '', location: '' };
+
+function applyResColFilter() {
+  ['name','shift','time','offdays','location'].forEach(col => {
+    const el = document.getElementById(`resCf-${col}`);
+    if (el) _resColFilters[col] = el.value.trim().toLowerCase();
+  });
+  renderResourceList();
+}
+
+function clearResColFilters() {
+  _resColFilters = { name: '', shift: '', time: '', offdays: '', location: '' };
+  ['name','shift','time','offdays','location'].forEach(col => {
+    const el = document.getElementById(`resCf-${col}`);
+    if (el) el.value = '';
+  });
+  renderResourceList();
+}
+
+function _resPassesFilter(res) {
+  const checks = [
+    { col: 'name',     val: (res.name || '').toLowerCase() },
+    { col: 'shift',    val: (res.shiftLabel || '').toLowerCase() },
+    { col: 'time',     val: (res.shiftStart || '').toLowerCase() },
+    { col: 'offdays',  val: offLabel(res).toLowerCase() },
+    { col: 'location', val: (res.location || '').toLowerCase() },
+  ];
+  return checks.every(({ col, val }) => !_resColFilters[col] || val.includes(_resColFilters[col]));
+}
+
+function sortResourceList(col) {
+  if (_resSort.col === col) {
+    _resSort.dir *= -1;
+  } else {
+    _resSort.col = col;
+    _resSort.dir = 1;
+  }
+  renderResourceList();
+}
+
+function _updateResSortHeaders() {
+  ['name','shift','time','offdays','location'].forEach(col => {
+    const th = document.getElementById(`resCol-${col}`);
+    if (!th) return;
+    const arrow = _resSort.col === col ? (_resSort.dir === 1 ? ' ▲' : ' ▼') : ' ⇅';
+    // Strip old arrow and re-append
+    th.textContent = th.textContent.replace(/ [▲▼⇅]$/, '') + arrow;
+  });
+}
+
+function _getResSortVal(res, col) {
+  switch (col) {
+    case 'name':     return (res.name || '').toLowerCase();
+    case 'shift':    return (res.shiftLabel || '').toLowerCase();
+    case 'time':     return res.shiftStart || '';
+    case 'offdays':  return offLabel(res).toLowerCase();
+    case 'location': return (res.location || '').toLowerCase();
+    default:         return '';
+  }
 }
 
 function renderResourceList() {
   const tbody = document.getElementById('resourceListBody');
   const emptyMsg = document.getElementById('resourceEmptyMsg');
   if (!tbody) return;
+
+  // Populate preview TZ dropdown if not yet done
+  const tzSel = document.getElementById('resListTZ');
+  if (tzSel && tzSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    tzSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      tzSel.appendChild(opt);
+    });
+  }
+
+  const previewTZ = tzSel ? tzSel.value : '';
+  const effectiveTZ = previewTZ || selectedTZ;
+  const tzNote = document.getElementById('resListTZNote');
+  if (tzNote) {
+    tzNote.textContent = previewTZ
+      ? `Showing "In View TZ" in ${effectiveTZ.split('/').pop().replace(/_/g,' ')}`
+      : `Defaulting to view TZ: ${tzLabel(selectedTZ)}`;
+  }
+
+  // Temporarily override selectedTZ so formatShiftInViewTZ converts to preview TZ
+  const savedTZ = selectedTZ;
+  selectedTZ = effectiveTZ;
+
   tbody.innerHTML = '';
   if (resources.length === 0) {
+    selectedTZ = savedTZ;
     if (emptyMsg) emptyMsg.style.display = 'block';
     document.getElementById('resourceListTable').style.display = 'none';
     return;
   }
   if (emptyMsg) emptyMsg.style.display = 'none';
   document.getElementById('resourceListTable').style.display = '';
-  resources.forEach((res, i) => {
+  _updateResSortHeaders();
+  const sortedRes = resources
+    .map((res, i) => ({ res, i }))
+    .filter(({ res }) => _resPassesFilter(res))
+    .sort((a, b) => {
+      const av = _getResSortVal(a.res, _resSort.col);
+      const bv = _getResSortVal(b.res, _resSort.col);
+      return av < bv ? -_resSort.dir : av > bv ? _resSort.dir : 0;
+    });
+  sortedRes.forEach(({ res, i }, rowIdx) => {
     const shiftStr = res.shiftStart && res.shiftEnd ? `${res.shiftStart}–${res.shiftEnd}` : '—';
     const tr = document.createElement('tr');
-    tr.style.background = i % 2 === 0 ? '#fff' : '#f8faff';
+    tr.style.background = rowIdx % 2 === 0 ? '#fff' : '#f8faff';
     tr.innerHTML = `
       <td style="padding:7px 10px;border:1px solid #dde;text-align:center"><input type="checkbox" class="res-check" data-idx="${i}" style="cursor:pointer" /></td>
       <td style="padding:7px 10px;border:1px solid #dde;font-weight:600">${res.name}</td>
@@ -1529,6 +1953,13 @@ function renderResourceList() {
     `;
     tbody.appendChild(tr);
   });
+  if (sortedRes.length === 0) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="8" style="padding:14px;text-align:center;color:#999;font-size:12px">No resources match the current filters. <button onclick="clearResColFilters()" style="background:none;border:none;color:#2980b9;cursor:pointer;font-size:12px;text-decoration:underline">Clear filters</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  selectedTZ = savedTZ; // restore
 }
 
 function populateShiftPresetDropdown() {
@@ -1546,6 +1977,40 @@ function populateShiftPresetDropdown() {
 }
 
 // ── Shift config management ───────────────────────────────────────
+function showAddShiftModal() {
+  document.getElementById('shiftLabel').value    = '';
+  document.getElementById('shiftCfgStart').value = '08:00';
+  document.getElementById('shiftCfgEnd').value   = '17:00';
+  populateIANASelect(document.getElementById('shiftCfgTZ'), '');
+  renderDayCheckboxes('shiftCfgDays', ['mon','tue','wed','thu','fri']);
+  document.querySelectorAll('#shiftCfgDays input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', function() { onDayCheckChange(this); updateShiftCfgPreview(); });
+  });
+  const previewSel = document.getElementById('shiftCfgPreviewTZ');
+  if (previewSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    previewSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      previewSel.appendChild(opt);
+    });
+  } else {
+    previewSel.options[0].textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+  }
+  previewSel.value = '';
+  document.getElementById('shiftCfgPreviewResult').textContent = '';
+  document.getElementById('addShiftModal').classList.add('open');
+  setTimeout(() => document.getElementById('shiftLabel').focus(), 50);
+}
+
+function closeAddShiftModal() {
+  document.getElementById('addShiftModal').classList.remove('open');
+}
+
 function addShiftConfig() {
   const label = document.getElementById('shiftLabel').value.trim();
   const start = document.getElementById('shiftCfgStart').value;
@@ -1553,13 +2018,26 @@ function addShiftConfig() {
   const tz    = document.getElementById('shiftCfgTZ').value;
   if (!label) { alert('Enter a shift label.'); return; }
   if (!start || !end) { alert('Set start and end times.'); return; }
-  shiftConfigs.push({ label, start, end, tz });
+  const workDays = Array.from(document.querySelectorAll('#shiftCfgDays input[type=checkbox]:checked')).map(c => c.value);
+  const { offPreset, offCustom } = workDaysToOffPreset(workDays);
+  shiftConfigs.push({ label, start, end, tz, workDays, offPreset, offCustom });
   saveShiftConfigs(shiftConfigs);
-  document.getElementById('shiftLabel').value    = '';
-  document.getElementById('shiftCfgStart').value = '08:00';
-  document.getElementById('shiftCfgEnd').value   = '17:00';
-  document.getElementById('shiftCfgTZ').value    = '';
+  closeAddShiftModal();
   renderResourcePanel();
+  setTimeout(() => {
+    const list = document.getElementById('shiftConfigList');
+    if (!list) return;
+    const divs = list.querySelectorAll('div[style]');
+    for (const div of divs) {
+      const strong = div.querySelector('strong');
+      if (strong && strong.textContent.trim() === label) {
+        div.classList.add('row-highlight');
+        div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => div.classList.remove('row-highlight'), 1400);
+        break;
+      }
+    }
+  }, 100);
 }
 
 function removeShiftConfig(i) {
@@ -1585,6 +2063,34 @@ function removeShiftConfig(i) {
 
 let editingShiftIdx = -1;
 
+function updateShiftCfgPreview() {
+  const previewSel = document.getElementById('shiftCfgPreviewTZ');
+  const resultEl   = document.getElementById('shiftCfgPreviewResult');
+  if (!previewSel || !resultEl) return;
+  const start = document.getElementById('shiftCfgStart').value;
+  const end   = document.getElementById('shiftCfgEnd').value;
+  const tz    = document.getElementById('shiftCfgTZ').value;
+  if (!start || !end) { resultEl.innerHTML = ''; return; }
+  const previewTZ = previewSel.value || selectedTZ;
+  const sourceTZ  = tz || selectedTZ; // empty = "same as view TZ"
+  const workDays  = Array.from(document.querySelectorAll('#shiftCfgDays input[type=checkbox]:checked')).map(c => c.value);
+  resultEl.innerHTML = buildShiftPreviewTable(start, end, sourceTZ, previewTZ, workDays);
+}
+
+function updateEsPreview() {
+  const previewSel = document.getElementById('esPreviewTZ');
+  const resultEl   = document.getElementById('esPreviewResult');
+  if (!previewSel || !resultEl) return;
+  const start = document.getElementById('esStart').value;
+  const end   = document.getElementById('esEnd').value;
+  const tz    = document.getElementById('esTZ').value;
+  if (!start || !end) { resultEl.innerHTML = ''; return; }
+  const previewTZ = previewSel.value || selectedTZ;
+  const sourceTZ  = tz || selectedTZ;
+  const workDays  = Array.from(document.querySelectorAll('#esDays input[type=checkbox]:checked')).map(c => c.value);
+  resultEl.innerHTML = buildShiftPreviewTable(start, end, sourceTZ, previewTZ, workDays);
+}
+
 function editShiftConfig(i) {
   editingShiftIdx = i;
   const cfg = shiftConfigs[i];
@@ -1593,6 +2099,31 @@ function editShiftConfig(i) {
   document.getElementById('esEnd').value   = cfg.end;
   populateIANASelect(document.getElementById('esTZ'), cfg.tz || '');
   document.getElementById('esTZ').value    = cfg.tz || '';
+  const workDays = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+  renderDayCheckboxes('esDays', workDays);
+  document.querySelectorAll('#esDays input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', function() { onDayCheckChange(this); updateEsPreview(); });
+  });
+
+  // Populate preview TZ dropdown
+  const previewSel = document.getElementById('esPreviewTZ');
+  if (previewSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    previewSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      previewSel.appendChild(opt);
+    });
+  } else {
+    previewSel.options[0].textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+  }
+  previewSel.value = '';
+  updateEsPreview();
+
   document.getElementById('editShiftModal').classList.add('open');
 }
 
@@ -1609,14 +2140,14 @@ function saveEditShiftConfig() {
   const end   = document.getElementById('esEnd').value;
   if (!start || !end) { alert('Set start and end times.'); return; }
   const tz = document.getElementById('esTZ').value;
+  const workDays = Array.from(document.querySelectorAll('#esDays input[type=checkbox]:checked')).map(c => c.value);
+  const { offPreset, offCustom } = workDaysToOffPreset(workDays);
   const oldLabel = shiftConfigs[editingShiftIdx].label;
-  shiftConfigs[editingShiftIdx] = { label, start, end, tz };
+  shiftConfigs[editingShiftIdx] = { label, start, end, tz, workDays, offPreset, offCustom };
   saveShiftConfigs(shiftConfigs);
-  // Propagate updated times to any resource linked to this shift config
-  // and re-stamp snapshots so month views reflect the change.
   resources.forEach((res, idx) => {
     if (res.shiftLabel === oldLabel) {
-      resources[idx] = { ...res, shiftLabel: label, shiftStart: start, shiftEnd: end, tz };
+      resources[idx] = { ...res, shiftLabel: label, shiftStart: start, shiftEnd: end, tz, offPreset, offCustom };
     }
   });
   saveResources(resources);
@@ -1625,6 +2156,19 @@ function saveEditShiftConfig() {
   closeEditShiftModal();
   renderResourcePanel();
   renderGrid();
+  setTimeout(() => {
+    const list = document.getElementById('shiftConfigList');
+    if (!list) return;
+    for (const div of list.querySelectorAll('div[style]')) {
+      const strong = div.querySelector('strong');
+      if (strong && strong.textContent.trim() === label) {
+        div.classList.add('row-highlight');
+        div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => div.classList.remove('row-highlight'), 1400);
+        break;
+      }
+    }
+  }, 100);
 }
 
 // ── Location management ───────────────────────────────────────────
@@ -1790,6 +2334,25 @@ function addHoliday(loc, idx) {
     saveHolidays(holidays);
   }
   renderLocationList();
+  setTimeout(() => {
+    const list = document.getElementById('locationList');
+    if (!list) return;
+    for (const locDiv of list.querySelectorAll('div[style]')) {
+      const nameSpan = locDiv.querySelector('span[style*="font-weight:600"]');
+      if (nameSpan && nameSpan.textContent.trim() === loc) {
+        for (const tag of locDiv.querySelectorAll('span[style*="background:#a8dadc"]')) {
+          if (tag.textContent.includes(val)) {
+            tag.style.outline = '2px solid #2c7873';
+            tag.style.animation = 'rowHighlight 1.2s ease-out forwards';
+            tag.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => { tag.style.outline = ''; tag.style.animation = ''; }, 1400);
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }, 100);
 }
 
 function removeHoliday(loc, date) {
@@ -1818,7 +2381,6 @@ function applyHolidayToChecked() {
   if (!ym) { alert('Select a month first.'); return; }
   const checked = [...document.querySelectorAll('.res-check:checked')];
   if (checked.length === 0) { alert('No resources checked.'); return; }
-  const curHols = loadHolidays();
   const [y, m] = ym.split('-').map(Number);
   const days = daysInMonth(ym);
   let totalApplied = 0;
@@ -1827,7 +2389,7 @@ function applyHolidayToChecked() {
     const res = resources[Number(cb.dataset.idx)];
     if (!res) return;
     if (!res.location) { skipped.push(res.name); return; }
-    const hols = curHols[res.location] || [];
+    const hols = holidays[res.location] || [];
     if (hols.length === 0) { skipped.push(res.name); return; }
     let applied = 0;
     for (let day = 1; day <= days; day++) {
@@ -1836,8 +2398,7 @@ function applyHolidayToChecked() {
     }
     totalApplied += applied;
   });
-  renderGrid();
-  renderLiveBar();
+  scheduleRender();
   let msg = `Applied holidays to ${checked.length - skipped.length} resource(s). ${totalApplied} cell(s) updated.`;
   if (skipped.length) msg += `\n\nSkipped (no location or holidays configured): ${skipped.join(', ')}`;
   alert(msg);
@@ -1860,7 +2421,7 @@ function applyLocationHolidays(resName, resLocation) {
     }
   }
   if (applied === 0) alert(`No holidays for "${resLocation}" fall in this month.`);
-  else { renderGrid(); renderLiveBar(); }
+  else { scheduleRender(); }
 }
 
 function addLocation() {
@@ -1871,6 +2432,19 @@ function addLocation() {
   saveLocations(locations);
   document.getElementById('locationLabel').value = '';
   renderLocationList();
+  setTimeout(() => {
+    const list = document.getElementById('locationList');
+    if (!list) return;
+    for (const div of list.querySelectorAll('div[style]')) {
+      const nameSpan = div.querySelector('span[style*="font-weight:600"]');
+      if (nameSpan && nameSpan.textContent.trim() === label) {
+        div.classList.add('row-highlight');
+        div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => div.classList.remove('row-highlight'), 1400);
+        break;
+      }
+    }
+  }, 100);
 }
 
 function removeLocation(i) {
@@ -1896,16 +2470,64 @@ function populateLocationDropdowns() {
   });
 }
 
-// ── Add resource row toggle ───────────────────────────────────────
+// ── Add resource modal ───────────────────────────────────────────
 function showAddResourceRow() {
-  const row = document.getElementById('addResourceRow');
-  row.style.display = 'block';
+  // Reset fields
+  document.getElementById('newName').value          = '';
+  document.getElementById('newShiftStart').value    = '08:00';
+  document.getElementById('newShiftEnd').value      = '17:00';
+  document.getElementById('newShiftStart').disabled = false;
+  document.getElementById('newShiftEnd').disabled   = false;
+  document.getElementById('newTZ').disabled         = false;
+  populateIANASelect(document.getElementById('newTZ'), '');
   locations = loadLocations();
   populateLocationDropdowns();
-  document.getElementById('newName').focus();
+  populateShiftPresetDropdown();
+  document.getElementById('newShiftPreset').value = '';
+  renderNewWorkDays(['mon','tue','wed','thu','fri']);
+  setWorkDaysDisabled('newWorkDays', false);
+  const note = document.getElementById('newDaysOffNote');
+  if (note) note.textContent = '(off days auto-derived)';
+
+  // Populate preview TZ dropdown
+  const previewSel = document.getElementById('newResPreviewTZ');
+  if (previewSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    previewSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      previewSel.appendChild(opt);
+    });
+  } else {
+    previewSel.options[0].textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+  }
+  previewSel.value = '';
+  updateNewResPreview();
+
+  document.getElementById('addResourceModal').classList.add('open');
+  setTimeout(() => document.getElementById('newName').focus(), 50);
 }
 function hideAddResourceRow() {
-  document.getElementById('addResourceRow').style.display = 'none';
+  document.getElementById('addResourceModal').classList.remove('open');
+}
+
+// ── Batched render scheduling ────────────────────────────────────
+let _renderScheduled = false;
+let _renderGrid = false, _renderLiveBar = false;
+function scheduleRender(grid = true, live = true) {
+  if (grid) _renderGrid = true;
+  if (live) _renderLiveBar = true;
+  if (_renderScheduled) return;
+  _renderScheduled = true;
+  Promise.resolve().then(() => {
+    _renderScheduled = false;
+    if (_renderGrid)    { _renderGrid = false; renderGrid(); }
+    if (_renderLiveBar) { _renderLiveBar = false; renderLiveBar(); }
+  });
 }
 
 // ── Render grid ──────────────────────────────────────────────────
@@ -1989,8 +2611,7 @@ function renderGrid() {
     const clickStyle = 'cursor:pointer;user-select:none';
     const todayCellStyle = isToday ? todayStyle : '';
     const dateStr = `${gy}-${String(gm).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const curHols = loadHolidays();
-    const holLocs = Object.entries(curHols)
+    const holLocs = Object.entries(holidays)
       .filter(([, hols]) => Array.isArray(hols) && hols.includes(dateStr))
       .map(([loc]) => loc);
     const flagHtml = holLocs.length
@@ -2117,7 +2738,17 @@ function openDayModal(day) {
 
   document.getElementById('dayModalTitle').textContent = `${dayName}, ${date}`;
   const { html, hourCovMap, resData } = buildDayView(day, dayName, covPct);
-  document.getElementById('dayModalBody').innerHTML = html;
+  const legendHtml = `<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:11px;background:#fff;border:1px solid #e0e6ef;border-radius:6px;padding:8px 12px;margin-bottom:14px">
+    <strong style="color:#1a3c5e">Legend:</strong>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:#a9dfbf;display:inline-block"></span>Present</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:linear-gradient(to right,#d5d8dc 50%,#b0b8c1 50%);display:inline-block"></span>Off 1st half (PN1/PTO1)</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:linear-gradient(to right,#b0b8c1 50%,#d5d8dc 50%);display:inline-block"></span>Off 2nd half (PN2/PTO2)</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:#a8dadc;display:inline-block"></span>Holiday</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:#f1948a;display:inline-block"></span>Leave/Absent</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ccc;background:#ececec;display:inline-block"></span>Rest day</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:3px;border:1px solid #ddd;background:#f8f8f8;display:inline-block;border-style:dashed"></span>Outside shift</span>
+  </div>`;
+  document.getElementById('dayModalBody').innerHTML = legendHtml + html;
   _dayHourCovMap = hourCovMap;
   _dayResData = resData;
   _rangeStart = _rangeEnd = null;
@@ -2174,6 +2805,7 @@ function closeDayModal() {
 let _dayHourCovMap = {};
 let _dayResData = [];
 let _rangeStart = null, _rangeEnd = null, _isDragging = false;
+let _dayModalMouseupHandler = null;
 
 function wireHourHover() {
   const table = document.querySelector('#dayModalBody .hour-grid');
@@ -2272,14 +2904,18 @@ function wireHourHover() {
     }
   });
 
-  document.addEventListener('mouseup', () => {
+  const _mouseupHandler = () => {
     if (_isDragging) {
       _isDragging = false;
       if (_rangeStart !== null && _rangeEnd !== null) {
         showRangeSummary(_rangeStart, _rangeEnd);
       }
     }
-  }, { once: false });
+  };
+  // Remove any previously registered handler before adding a new one
+  document.removeEventListener('mouseup', _dayModalMouseupHandler);
+  _dayModalMouseupHandler = _mouseupHandler;
+  document.addEventListener('mouseup', _mouseupHandler);
 
   table.addEventListener('mouseleave', () => {
     if (!_isDragging) { hoverCol(null); tooltip.style.display = 'none'; }
@@ -2564,13 +3200,14 @@ function addResource() {
   if (resources.find(r => r.name.toLowerCase() === name.toLowerCase())) {
     alert('Resource already exists.'); return;
   }
-  const preset = document.getElementById('newOffDays').value;
-  const custom = document.getElementById('customOff').value.trim();
+  let preset = document.getElementById('newOffDays').value;
+  let custom = document.getElementById('customOff').value.trim();
   const shiftPresetIdx = document.getElementById('newShiftPreset').value;
   let shiftStart, shiftEnd, tz, shiftLabel;
   if (shiftPresetIdx !== '') {
     const cfg = shiftConfigs[Number(shiftPresetIdx)];
     shiftStart = cfg.start; shiftEnd = cfg.end; tz = cfg.tz; shiftLabel = cfg.label;
+    if (cfg.offPreset) { preset = cfg.offPreset; custom = cfg.offCustom || ''; }
   } else {
     shiftStart = document.getElementById('newShiftStart').value;
     shiftEnd   = document.getElementById('newShiftEnd').value;
@@ -2584,10 +3221,25 @@ function addResource() {
   document.getElementById('customOff').value = '';
   document.getElementById('newShiftPreset').value = '';
   document.getElementById('newLocation').value = '';
+  renderNewWorkDays(['mon','tue','wed','thu','fri']); // reset to Mon–Fri
   hideAddResourceRow();
   renderChips();
-  renderGrid();
-  renderLiveBar();
+  scheduleRender();
+  // Highlight and scroll to the newly added row
+  setTimeout(() => {
+    const tbody = document.getElementById('resourceListBody');
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    for (const row of rows) {
+      const nameCell = row.querySelector('td:nth-child(2)');
+      if (nameCell && nameCell.textContent.trim() === name) {
+        row.classList.add('row-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => row.classList.remove('row-highlight'), 1400);
+        break;
+      }
+    }
+  }, 100);
 }
 
 function removeResource(i) {
@@ -2600,8 +3252,7 @@ function removeResource(i) {
   Object.keys(allData).forEach(ym => stampMonthSnapshot(ym));
   saveData(allData);
   renderChips();
-  renderGrid();
-  renderLiveBar();
+  scheduleRender();
 }
 
 let editingIndex = -1;
@@ -2626,20 +3277,124 @@ function openEditModal(i) {
   const isPreset = matchIdx >= 0;
   populateIANASelect(document.getElementById('editTZ'), res.tz || '');
   document.getElementById('editName').value       = res.name;
-  document.getElementById('editOffDays').value    = res.offPreset || 'satsun';
-  document.getElementById('editCustomOff').value  = res.offCustom || '';
   document.getElementById('editShiftStart').value = res.shiftStart || '';
   document.getElementById('editShiftEnd').value   = res.shiftEnd || '';
   document.getElementById('editTZ').value         = res.tz || '';
   document.getElementById('editShiftStart').disabled = isPreset;
   document.getElementById('editShiftEnd').disabled   = isPreset;
   document.getElementById('editTZ').disabled         = isPreset;
-  document.getElementById('editCustomOffLabel').style.display =
-    res.offPreset === 'custom' ? 'flex' : 'none';
+
+  // Render work-day checkboxes then apply disabled state
+  const workDays = offPresetToWorkDays(res.offPreset || 'satsun', res.offCustom || '');
+  renderEditWorkDays(workDays);
+  setWorkDaysDisabled('editWorkDays', isPreset);
+  const note = document.getElementById('editDaysOffNote');
+  if (note) note.textContent = isPreset ? '(from shift config — read only)' : '(off days auto-derived)';
   locations = loadLocations();
   populateLocationDropdowns();
   document.getElementById('editLocation').value = res.location || '';
+
+  // Populate preview TZ dropdown
+  const previewSel = document.getElementById('editResPreviewTZ');
+  if (previewSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+    previewSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      previewSel.appendChild(opt);
+    });
+  } else {
+    // Refresh the default label in case selectedTZ changed
+    previewSel.options[0].textContent = `— Same as view TZ (${tzLabel(selectedTZ)}) —`;
+  }
+  previewSel.value = '';
+  updateEditResPreview();
+
   document.getElementById('editModal').classList.add('open');
+}
+
+function renderEditWorkDays(workDays) {
+  renderDayCheckboxes('editWorkDays', workDays);
+  // Add change listener to each checkbox to update hidden fields + preview
+  document.querySelectorAll('#editWorkDays input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      onDayCheckChange(this);
+      syncEditWorkDaysToHidden();
+    });
+  });
+  syncEditWorkDaysToHidden();
+}
+
+function syncEditWorkDaysToHidden() {
+  const checked = Array.from(document.querySelectorAll('#editWorkDays input[type=checkbox]:checked')).map(c => c.value);
+  const { offPreset, offCustom } = workDaysToOffPreset(checked);
+  document.getElementById('editOffDays').value  = offPreset;
+  document.getElementById('editCustomOff').value = offCustom;
+  const offDays = ALL_DAYS.filter(d => !checked.includes(d));
+  const preview = document.getElementById('editOffDaysPreview');
+  if (preview) {
+    preview.textContent = offDays.length
+      ? `Off: ${offDays.map(d => DAY_LABEL[d]).join(', ')}`
+      : 'No fixed off days';
+  }
+  updateEditResPreview();
+}
+
+function onEditShiftPresetChange() {
+  const sel      = document.getElementById('editShiftPreset');
+  const isPreset = sel.value !== '';
+  const note     = document.getElementById('editDaysOffNote');
+
+  document.getElementById('editShiftStart').disabled = isPreset;
+  document.getElementById('editShiftEnd').disabled   = isPreset;
+  document.getElementById('editTZ').disabled         = isPreset;
+
+  if (isPreset) {
+    const cfg      = shiftConfigs[Number(sel.value)];
+    document.getElementById('editShiftStart').value = cfg.start;
+    document.getElementById('editShiftEnd').value   = cfg.end;
+    document.getElementById('editTZ').value         = cfg.tz || '';
+    const workDays = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+    renderEditWorkDays(workDays);
+    setWorkDaysDisabled('editWorkDays', true);
+    if (note) note.textContent = '(from shift config — read only)';
+  } else {
+    setWorkDaysDisabled('editWorkDays', false);
+    if (note) note.textContent = '(off days auto-derived)';
+  }
+  updateEditResPreview();
+}
+
+function updateEditResPreview() {
+  const previewSel = document.getElementById('editResPreviewTZ');
+  const resultEl   = document.getElementById('editResPreviewResult');
+  if (!previewSel || !resultEl) return;
+  const start  = document.getElementById('editShiftStart').value;
+  const end    = document.getElementById('editShiftEnd').value;
+  const resTZ  = document.getElementById('editTZ').value;
+  if (!start || !end) { resultEl.innerHTML = ''; return; }
+  const previewTZ = previewSel.value || selectedTZ;
+  const sourceTZ  = resTZ || selectedTZ;
+  const workDays  = Array.from(document.querySelectorAll('#editWorkDays input[type=checkbox]:checked')).map(c => c.value);
+  resultEl.innerHTML = buildShiftPreviewTable(start, end, sourceTZ, previewTZ, workDays);
+}
+
+function updateNewResPreview() {
+  const previewSel = document.getElementById('newResPreviewTZ');
+  const resultEl   = document.getElementById('newResPreviewResult');
+  if (!previewSel || !resultEl) return;
+  const start  = document.getElementById('newShiftStart').value;
+  const end    = document.getElementById('newShiftEnd').value;
+  const resTZ  = document.getElementById('newTZ').value;
+  if (!start || !end) { resultEl.innerHTML = ''; return; }
+  const previewTZ = previewSel.value || selectedTZ;
+  const sourceTZ  = resTZ || selectedTZ;
+  const workDays  = Array.from(document.querySelectorAll('#newWorkDays input[type=checkbox]:checked')).map(c => c.value);
+  resultEl.innerHTML = buildShiftPreviewTable(start, end, sourceTZ, previewTZ, workDays);
 }
 
 function closeEditModal() {
@@ -2662,9 +3417,12 @@ function saveEditResource() {
   // Resolve shift from preset or manual fields
   const shiftPresetIdx = document.getElementById('editShiftPreset').value;
   let shiftStart, shiftEnd, tz, shiftLabel;
+  let offPreset = document.getElementById('editOffDays').value;
+  let offCustom = document.getElementById('editCustomOff').value.trim();
   if (shiftPresetIdx !== '') {
     const cfg = shiftConfigs[Number(shiftPresetIdx)];
     shiftStart = cfg.start; shiftEnd = cfg.end; tz = cfg.tz; shiftLabel = cfg.label;
+    if (cfg.offPreset) { offPreset = cfg.offPreset; offCustom = cfg.offCustom || ''; }
   } else {
     shiftStart = document.getElementById('editShiftStart').value;
     shiftEnd   = document.getElementById('editShiftEnd').value;
@@ -2674,11 +3432,10 @@ function saveEditResource() {
 
   // Update resource record
   resources[editingIndex] = {
-    name:       newName,
-    offPreset:  document.getElementById('editOffDays').value,
-    offCustom:  document.getElementById('editCustomOff').value.trim(),
+    name: newName,
+    offPreset, offCustom,
     shiftStart, shiftEnd, tz, shiftLabel,
-    location:   document.getElementById('editLocation').value,
+    location: document.getElementById('editLocation').value,
   };
 
   // If name changed, migrate all stored cell data to the new name
@@ -2707,8 +3464,20 @@ function saveEditResource() {
   saveData(allData);
   closeEditModal();
   renderChips();
-  renderGrid();
-  renderLiveBar();
+  scheduleRender();
+  setTimeout(() => {
+    const tbody = document.getElementById('resourceListBody');
+    if (!tbody) return;
+    for (const row of tbody.querySelectorAll('tr')) {
+      const nameCell = row.querySelector('td:nth-child(2)');
+      if (nameCell && nameCell.textContent.trim() === newName) {
+        row.classList.add('row-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => row.classList.remove('row-highlight'), 1400);
+        break;
+      }
+    }
+  }, 100);
 }
 
 document.getElementById('editOffDays').addEventListener('change', function() {
@@ -2716,24 +3485,23 @@ document.getElementById('editOffDays').addEventListener('change', function() {
     this.value === 'custom' ? 'flex' : 'none';
 });
 
-document.getElementById('editShiftPreset').addEventListener('change', function() {
-  const manual = this.value === '';
-  document.getElementById('editShiftStart').disabled = !manual;
-  document.getElementById('editShiftEnd').disabled   = !manual;
-  document.getElementById('editTZ').disabled         = !manual;
-  if (!manual) {
-    const cfg = shiftConfigs[Number(this.value)];
-    document.getElementById('editShiftStart').value = cfg.start;
-    document.getElementById('editShiftEnd').value   = cfg.end;
-    populateIANASelect(document.getElementById('editTZ'), cfg.tz || '');
-    document.getElementById('editTZ').value         = cfg.tz || '';
-  }
-});
+document.getElementById('editShiftPreset').addEventListener('change', onEditShiftPresetChange);
+document.getElementById('editShiftStart').addEventListener('change', updateEditResPreview);
+document.getElementById('editShiftEnd').addEventListener('change', updateEditResPreview);
+document.getElementById('editTZ').addEventListener('change', updateEditResPreview);
 
 // Close modals on overlay click
 document.getElementById('editModal').addEventListener('click', function(e) {
   if (e.target === this) closeEditModal();
 });
+['esStart','esEnd','esTZ'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateEsPreview);
+});
+
+['shiftCfgStart','shiftCfgEnd','shiftCfgTZ'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateShiftCfgPreview);
+});
+
 document.getElementById('editShiftModal').addEventListener('click', function(e) {
   if (e.target === this) closeEditShiftModal();
 });
@@ -2815,11 +3583,11 @@ function exportData() {
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    resources:    loadResources(),
-    shiftConfigs: loadShiftConfigs(),
-    locations:    loadLocations(),
-    holidays:     loadHolidays(),
-    data:         loadData(),
+    resources:    resources,
+    shiftConfigs: shiftConfigs,
+    locations:    locations,
+    holidays:     holidays,
+    data:         allData,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -2853,8 +3621,7 @@ function importData(event) {
         document.getElementById('monthPicker').value = months[months.length - 1];
       }
       renderChips();
-      renderGrid();
-      renderLiveBar();
+      scheduleRender();
       alert('Import successful!');
     } catch {
       alert('Failed to parse file. Make sure it is a valid export JSON.');
@@ -2949,7 +3716,7 @@ async function syncPullSilent() {
     holidays     = loadHolidays();
     allData      = loadData();
     _localDataChanges.clear();
-    renderChips(); renderGrid(); renderLiveBar();
+    renderChips(); scheduleRender();
     setSyncStatus('✓ Auto-pulled at ' + new Date().toLocaleTimeString(), '#27ae60');
     showSyncedToast('✔ Successfully synced');
   } catch { _suppressSaveToast = false; /* silent fail */ }
@@ -2988,24 +3755,31 @@ async function syncPushSilent() {
     } catch { /* no server state yet — first push */ }
 
     // Step 2: merge — start from server state, overlay local cell changes on top
-    const localData = loadData();
     const mergedData = JSON.parse(JSON.stringify(serverData)); // deep clone server
     _localDataChanges.forEach(token => {
       const [ym, key] = token.split('|');
       if (!mergedData[ym]) mergedData[ym] = {};
-      const localVal = (localData[ym] || {})[key];
+      const localVal = (allData[ym] || {})[key];
       if (localVal !== undefined) mergedData[ym][key] = localVal;
       else delete mergedData[ym][key];
     });
+    // Always use local snapshots — they are authoritative (resource add/edit/delete
+    // updates them locally and must not be overwritten by a stale server snapshot).
+    Object.keys(allData).forEach(ym => {
+      if (allData[ym]._snapshot) {
+        if (!mergedData[ym]) mergedData[ym] = {};
+        mergedData[ym]._snapshot = allData[ym]._snapshot;
+      }
+    });
 
-    // Step 3: push merged result (config arrays use local — last-writer-wins for config)
+    // Step 3: push merged result (config arrays use local globals — last-writer-wins for config)
     const payload = {
       version: 1,
       pushedAt: new Date().toISOString(),
-      resources:    loadResources(),
-      shiftConfigs: loadShiftConfigs(),
-      locations:    loadLocations(),
-      holidays:     loadHolidays(),
+      resources:    resources,
+      shiftConfigs: shiftConfigs,
+      locations:    locations,
+      holidays:     holidays,
       data:         mergedData,
     };
     const pushRes = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
@@ -3101,7 +3875,7 @@ async function syncPull() {
     _localDataChanges.clear();
     const months = Object.keys(payload.data || {}).sort();
     if (months.length) document.getElementById('monthPicker').value = months[months.length - 1];
-    renderChips(); renderGrid(); renderLiveBar();
+    renderChips(); scheduleRender();
     setSyncStatus('✓ Pulled successfully at ' + new Date().toLocaleTimeString(), '#27ae60');
     showSyncedToast('✔ Successfully synced');
   } catch (err) {
@@ -3134,33 +3908,62 @@ function clearAll() {
   localStorage.removeItem(LS_SHIFT_CFGS);
   resources = []; allData = {}; shiftConfigs = [];
   renderChips();
-  renderGrid();
-  renderLiveBar();
+  scheduleRender();
 }
 
 // ── Init ─────────────────────────────────────────────────────────
-document.getElementById('newOffDays').addEventListener('change', function() {
-  document.getElementById('customOffLabel').style.display =
-    this.value === 'custom' ? 'flex' : 'none';
-});
+function renderNewWorkDays(workDays) {
+  renderDayCheckboxes('newWorkDays', workDays);
+  document.querySelectorAll('#newWorkDays input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      onDayCheckChange(this);
+      syncNewWorkDaysToHidden();
+    });
+  });
+  syncNewWorkDaysToHidden();
+}
 
-// Shift preset locks/unlocks manual fields
+function syncNewWorkDaysToHidden() {
+  const checked = Array.from(document.querySelectorAll('#newWorkDays input[type=checkbox]:checked')).map(c => c.value);
+  const { offPreset, offCustom } = workDaysToOffPreset(checked);
+  document.getElementById('newOffDays').value = offPreset;
+  document.getElementById('customOff').value  = offCustom;
+  const offDays = ALL_DAYS.filter(d => !checked.includes(d));
+  const preview = document.getElementById('newOffDaysPreview');
+  if (preview) preview.textContent = offDays.length ? `Off: ${offDays.map(d => DAY_LABEL[d]).join(', ')}` : 'No fixed off';
+  updateNewResPreview();
+}
+
+// Shift preset locks/unlocks manual fields and syncs work days
 document.getElementById('newShiftPreset').addEventListener('change', function() {
-  const manual = this.value === '';
-  document.getElementById('newShiftStart').disabled = !manual;
-  document.getElementById('newShiftEnd').disabled   = !manual;
-  document.getElementById('newTZ').disabled         = !manual;
-  if (!manual) {
-    const cfg = shiftConfigs[Number(this.value)];
+  const isPreset = this.value !== '';
+  document.getElementById('newShiftStart').disabled = isPreset;
+  document.getElementById('newShiftEnd').disabled   = isPreset;
+  document.getElementById('newTZ').disabled         = isPreset;
+  const note = document.getElementById('newDaysOffNote');
+
+  if (isPreset) {
+    const cfg      = shiftConfigs[Number(this.value)];
     document.getElementById('newShiftStart').value = cfg.start;
     document.getElementById('newShiftEnd').value   = cfg.end;
     document.getElementById('newTZ').value         = cfg.tz || '';
+    const workDays = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+    renderNewWorkDays(workDays);
+    setWorkDaysDisabled('newWorkDays', true);
+    if (note) note.textContent = '(from shift config — read only)';
   } else {
     document.getElementById('newTZ').value = '';
+    setWorkDaysDisabled('newWorkDays', false);
+    if (note) note.textContent = '(off days auto-derived)';
   }
+  updateNewResPreview();
 });
 
-document.getElementById('monthPicker').addEventListener('change', () => { renderGrid(); renderLiveBar(); });
+['newShiftStart','newShiftEnd','newTZ'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateNewResPreview);
+});
+
+document.getElementById('monthPicker').addEventListener('change', () => { scheduleRender(); });
 
 function updateStickyTops() {
   const headerH = document.querySelector('header').offsetHeight;
@@ -3168,12 +3971,20 @@ function updateStickyTops() {
   toolbar.style.top = headerH + 'px';
   const toolbarH = toolbar.offsetHeight;
 
+  // Keep modal overlays positioned below the sticky header
+  document.documentElement.style.setProperty('--header-offset', headerH + 'px');
+
   const panelTop = headerH + toolbarH;
   document.getElementById('advFilterPanel').style.top = panelTop + 'px';
   document.getElementById('syncPanel').style.top      = panelTop + 'px';
 
+  // Sticky legend sits below toolbar (and below any open panel)
+  const legend = document.querySelector('.legend');
+  if (legend) {
+    legend.style.top = panelTop + 'px';
+  }
+
   // Size grid-wrap to fill remaining viewport
-  // offsetTop gives distance from offsetParent (body), independent of scroll position
   const gridWrap = document.querySelector('.grid-wrap');
   if (gridWrap) {
     gridWrap.style.height = 'auto'; // reset so offsetTop is accurate
@@ -3219,31 +4030,99 @@ function renderLiveBar() {
   const dayName = getDayInfo(ym, day).dayName;
   const curH    = tzNow.hours;
   const curMin  = tzNow.minutes;
+  const curSec  = tzNow.seconds;
+  const nowFrac = curH + curMin / 60 + curSec / 3600; // current time as fractional hour
 
   const todayResData = buildResData(day, dayName);
+
+  function formatRemaining(secs) {
+    if (secs <= 0) return '';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m left`;
+    if (m > 0) return `${m}m ${String(s).padStart(2,'0')}s left`;
+    return `${s}s left`;
+  }
+
+  function formatStartsIn(secs) {
+    if (secs <= 0) return '';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `in ${h}h ${String(m).padStart(2,'0')}m`;
+    if (m > 0) return `in ${m}m ${String(s).padStart(2,'0')}s`;
+    return `in ${s}s`;
+  }
 
   function liveCoverage(h) {
     const raw = computeHourCoverage(h, todayResData);
     return raw === null ? null : Math.round(raw * 100);
   }
 
-  function availableNames(h) {
+  function isAvailableAt(d, h) {
+    if (d.isOff) return false;
+    if (!inShift(h, d.start, d.end)) return false;
+    if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
+    if (['pn1','pto1'].includes(d.statusClass)) {
+      const mid = shiftMidHour(d.start, d.end);
+      return inShift(h, mid, d.end);
+    }
+    if (['pn2','pto2'].includes(d.statusClass)) {
+      const mid = shiftMidHour(d.start, d.end);
+      return !inShift(h, mid, d.end);
+    }
+    return true;
+  }
+
+  function calcRemSecs(d) {
+    if (d.end === null) return null;
+    const isOvernight = d.end <= d.start;
+    if (isOvernight && d.end <= nowFrac) {
+      return Math.round((d.end + 24 - nowFrac) * 3600);
+    }
+    return Math.round((d.end - nowFrac) * 3600);
+  }
+
+  function calcStartSecs(d) {
+    if (d.start === null) return null;
+    if (d.start <= nowFrac) {
+      return Math.round((d.start + 24 - nowFrac) * 3600);
+    }
+    return Math.round((d.start - nowFrac) * 3600);
+  }
+
+  // Returns { name, remaining } for resources available at hour h (current box)
+  function availableResInfo(h) {
     return todayResData
-      .filter(d => {
-        if (d.isOff) return false;
-        if (!inShift(h, d.start, d.end)) return false;
-        if (d.statusClass === 'absent' || d.statusClass === 'off' || d.statusClass === 'hol') return false;
-        if (['pn1','pto1','hol1'].includes(d.statusClass)) {
-          const mid = shiftMidHour(d.start, d.end);
-          return inShift(h, mid, d.end);
+      .filter(d => isAvailableAt(d, h))
+      .map(d => {
+        const remSecs = calcRemSecs(d);
+        return { name: d.res.name, remaining: remSecs !== null && remSecs > 0 ? formatRemaining(remSecs) : '' };
+      });
+  }
+
+  // Returns { name, tag } for next-4-hours box — shows "starts in Xh" or "Xh left"
+  function next4ResInfo(hStart, hEnd) {
+    const seen = new Map();
+    for (let h = hStart; h <= hEnd; h++) {
+      todayResData.forEach(d => {
+        if (seen.has(d.res.name)) return;
+        if (!isAvailableAt(d, h)) return;
+        let tag = '';
+        const inShiftNow = inShift(nowFrac, d.start, d.end);
+        if (inShiftNow) {
+          const remSecs = calcRemSecs(d);
+          tag = remSecs !== null && remSecs > 0 ? formatRemaining(remSecs) : '';
+        } else {
+          const startSecs = calcStartSecs(d);
+          tag = startSecs !== null && startSecs > 0 && startSecs <= 12 * 3600
+            ? formatStartsIn(startSecs) : '';
         }
-        if (['pn2','pto2','hol2'].includes(d.statusClass)) {
-          const mid = shiftMidHour(d.start, d.end);
-          return !inShift(h, mid, d.end);
-        }
-        return true; // present
-      })
-      .map(d => d.res.name);
+        seen.set(d.res.name, tag);
+      });
+    }
+    return [...seen.entries()].map(([name, tag]) => ({ name, tag }));
   }
 
   function pctClass(p) {
@@ -3253,12 +4132,12 @@ function renderLiveBar() {
     return 'c-low';
   }
 
-  function makeBox(label, timeStr, pct, names, hStart, hEnd) {
-    const color   = pct !== null ? pctToColor(pct) : '#bbb';
-    const pctTxt  = pct === null ? '—' : pct + '%';
-    const fillW   = pct ?? 0;
+  function makeBox(label, timeStr, pct, names, hStart, hEnd, boxId) {
+    const color  = pct !== null ? pctToColor(pct) : '#bbb';
+    const pctTxt = pct === null ? '—' : pct + '%';
+    const fillW  = pct ?? 0;
     const namesTxt = names.length ? names.join(', ') : 'None available';
-    return `<div class="live-box" style="cursor:pointer" onclick="openLiveDetail(${hStart},${hEnd},'${label}','${timeStr}')">
+    return `<div class="live-box" id="${boxId}" style="cursor:pointer" onclick="openLiveDetail(${hStart},${hEnd},'${label}','${timeStr}')">
       <div class="lb-label">${label}</div>
       <div class="lb-time">${timeStr}</div>
       <div class="lb-pct" style="color:${color}">${pctTxt}</div>
@@ -3270,19 +4149,17 @@ function renderLiveBar() {
   // Box 1: current hour
   const curLabel  = `${String(curH).padStart(2,'0')}:00 – ${String(curH+1).padStart(2,'0')}:00`;
   const dateLabel = `${m}/${day}/${y}`;
-  const curPct   = liveCoverage(curH);
-  const curNames = availableNames(curH);
-  let html = makeBox(`Today · ${dateLabel}`, curLabel, curPct, curNames, curH, curH);
+  const curPct    = liveCoverage(curH);
+  const curNames  = availableResInfo(curH).map(r => r.name);
+  let html = makeBox(`Today · ${dateLabel}`, curLabel, curPct, curNames, curH, curH, 'liveBox1');
 
   // Box 2: next 4 hours from now
   const next4Start = curH + 1;
-  const next4End   = Math.min(curH + 4, 23); // cap at end of day
+  const next4End   = Math.min(curH + 4, 23);
   const next4Pcts  = [];
-  const next4Names = new Set();
   for (let h = next4Start; h <= next4End; h++) {
     const p = liveCoverage(h);
     if (p !== null) next4Pcts.push(p);
-    availableNames(h).forEach(n => next4Names.add(n));
   }
   const next4Avg = next4Pcts.length
     ? Math.round(next4Pcts.reduce((a, b) => a + b, 0) / next4Pcts.length)
@@ -3290,9 +4167,17 @@ function renderLiveBar() {
   const next4TimeStr = next4Start <= next4End
     ? `${String(next4Start).padStart(2,'0')}:00 – ${String(next4End + 1).padStart(2,'0')}:00`
     : 'No upcoming hours';
-  html += makeBox('Next 4 hours', next4TimeStr, next4Avg, [...next4Names], next4Start, next4End);
+  const next4Names = next4Start <= next4End ? next4ResInfo(next4Start, next4End).map(r => r.name) : [];
+  html += makeBox('Next 4 hours', next4TimeStr, next4Avg, next4Names, next4Start, next4End, 'liveBox2');
 
   bar.innerHTML = html;
+}
+
+// Per-second tick between minute changes — coverage/names are stable within a minute,
+// so nothing needs updating here. Full rebuild happens on minute change in startLiveBar.
+function updateLiveBarCountdowns() {
+  // If the boxes have been destroyed (e.g. modal closed/reopened), trigger a full rebuild.
+  if (!document.getElementById('liveBox1')) renderLiveBar();
 }
 
 function closeLiveDetail() {
@@ -3307,6 +4192,64 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
   const dayName = getDayInfo(ym, day).dayName;
   const resData = buildResData(day, dayName);
   const hours   = Array.from({ length: hEnd - hStart + 1 }, (_, i) => hStart + i);
+  const nowFrac = tzNow.hours + tzNow.minutes / 60 + tzNow.seconds / 3600;
+
+  function fmtRemaining(secs) {
+    if (secs <= 0) return '';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m left`;
+    if (m > 0) return `${m}m ${String(s).padStart(2,'0')}s left`;
+    return `${s}s left`;
+  }
+
+  function fmtStartsIn(secs) {
+    if (secs <= 0) return '';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `starts in ${h}h ${String(m).padStart(2,'0')}m`;
+    if (m > 0) return `starts in ${m}m ${String(s).padStart(2,'0')}s`;
+    return `starts in ${s}s`;
+  }
+
+  function remainingColor(secs) {
+    if (secs <= 1800) return '#e74c3c';   // ≤30 min — red
+    if (secs <= 3600) return '#e67e22';   // ≤1 hr  — orange
+    return '#27ae60';                      // >1 hr  — green
+  }
+
+  function resTimeTag(d) {
+    if (d.start === null || d.end === null) return { text: '', color: '' };
+
+    const isOvernight = d.end <= d.start; // shift crosses midnight in view TZ
+    const inShiftNow  = inShift(nowFrac, d.start, d.end);
+
+    if (inShiftNow) {
+      // Resource is currently on shift — show time remaining until shift end
+      let remSecs;
+      if (isOvernight && d.end <= nowFrac) {
+        // Past midnight: end is early morning, nowFrac is late night — end is "tomorrow"
+        remSecs = Math.round((d.end + 24 - nowFrac) * 3600);
+      } else {
+        remSecs = Math.round((d.end - nowFrac) * 3600);
+      }
+      if (remSecs <= 0) return { text: '', color: '' };
+      return { text: fmtRemaining(remSecs), color: remainingColor(remSecs) };
+    } else {
+      // Resource is not yet on shift — show time until shift start
+      let startSecs;
+      if (d.start <= nowFrac) {
+        // Start already passed today (overnight: start is tomorrow's perspective)
+        startSecs = Math.round((d.start + 24 - nowFrac) * 3600);
+      } else {
+        startSecs = Math.round((d.start - nowFrac) * 3600);
+      }
+      if (startSecs <= 0 || startSecs > 12 * 3600) return { text: '', color: '' };
+      return { text: fmtStartsIn(startSecs), color: '#2980b9' };
+    }
+  }
 
   function blockClass(d, h) {
     if (d.isOff) return 'off';
@@ -3352,12 +4295,16 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
     const cfg = grp.cfg || shiftConfigs.find(c => c.label === shiftLabel);
     const timeInfo = cfg ? ` · ${formatShiftInViewTZ({ shiftStart: cfg.start, shiftEnd: cfg.end, tz: cfg.tz }) || `${cfg.start}–${cfg.end}`}` : '';
 
-    const rows = grp.members.map(d =>
-      `<div class="ldm-res-row">
-        <div class="ldm-res-dot" style="background:#27ae60"></div>
-        <span class="ldm-res-name">${d.res.name}</span>
-      </div>`
-    ).join('');
+    const rows = grp.members.map(d => {
+      const { text, color } = resTimeTag(d);
+      return `<div class="ldm-res-row" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="ldm-res-dot" style="background:#27ae60"></div>
+          <span class="ldm-res-name">${d.res.name}</span>
+        </div>
+        ${text ? `<span style="font-size:11px;font-weight:700;color:${color};background:${color}18;border:1px solid ${color}55;border-radius:4px;padding:2px 7px;white-space:nowrap">${text}</span>` : ''}
+      </div>`;
+    }).join('');
 
     bodyHtml += `<div class="ldm-shift">
       <div class="ldm-shift-head">
@@ -3377,11 +4324,37 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
   document.getElementById('liveDetailOverlay').classList.add('open');
 }
 
+function updateHeaderClock() {
+  const t = nowInTZ();
+  const pad = n => String(n).padStart(2, '0');
+  const timeStr = `${pad(t.hours)}:${pad(t.minutes)}:${pad(t.seconds)}`;
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${t.dayName}, ${months[t.month - 1]} ${t.date}, ${t.year}`;
+  const clockEl = document.getElementById('headerClock');
+  const dateEl  = document.getElementById('headerClockDate');
+  if (clockEl) clockEl.textContent = timeStr;
+  if (dateEl)  dateEl.textContent  = dateStr;
+}
+
 let _liveBarTimer = null;
+let _liveBarLastMinute = -1;
 function startLiveBar() {
+  updateHeaderClock();
   renderLiveBar();
-  // refresh every minute
-  _liveBarTimer = setInterval(renderLiveBar, 60000);
+  _liveBarLastMinute = -1;
+  // Clock updates every second; live bar rebuilds only when the minute changes
+  _liveBarTimer = setInterval(() => {
+    updateHeaderClock();
+    const tzNow = nowInTZ();
+    const thisMinute = tzNow.hours * 60 + tzNow.minutes;
+    if (thisMinute !== _liveBarLastMinute) {
+      _liveBarLastMinute = thisMinute;
+      renderLiveBar();
+    } else {
+      updateLiveBarCountdowns();
+    }
+  }, 1000);
 }
 function stopLiveBar() { clearInterval(_liveBarTimer); }
 
@@ -3392,8 +4365,7 @@ function stopLiveBar() { clearInterval(_liveBarTimer); }
   document.getElementById('monthPicker').value = ym;
   renderChips();
   renderGrid();
-  renderLiveBar();
-  startLiveBar();
+  startLiveBar(); // startLiveBar calls renderLiveBar + updateHeaderClock internally
   // Restore auto-pull if it was enabled
   if (localStorage.getItem(LS_AUTO_PULL) === '1' && localStorage.getItem(LS_SYNC_URL)) {
     const secs = parseInt(localStorage.getItem(LS_AUTO_INTERVAL) || '60') * 1000;
@@ -3905,7 +4877,7 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
 #liveDetailOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:center; justify-content:center; }
 #liveDetailOverlay.open { display:flex; }
 #liveDetailModal { background:#fff; border-radius:10px; width:480px; max-width:95vw; max-height:88vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.22); }
-.ldm-header { background:#1a3c5e; color:#fff; padding:14px 18px; border-radius:10px 10px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.ldm-header { background:#2c7873; color:#fff; padding:14px 18px; border-radius:10px 10px 0 0; display:flex; justify-content:space-between; align-items:center; }
 .ldm-header h3 { margin:0; font-size:15px; }
 .ldm-body { padding:16px 18px 18px; }
 .ldm-time { font-size:12px; color:#888; margin-bottom:14px; }
@@ -3933,7 +4905,7 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
 #helpOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:10000; align-items:center; justify-content:center; }
 #helpOverlay.open { display:flex; }
 #helpModal { background:#fff; border-radius:10px; width:820px; max-width:96vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.25); overflow:hidden; }
-.hm-header { background:#1a3c5e; color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.hm-header { background:#2c7873; color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
 .hm-header h3 { margin:0; font-size:16px; font-weight:700; }
 .hm-body { display:flex; flex:1; overflow:hidden; }
 .hm-nav { width:180px; flex-shrink:0; background:#f0f4fa; border-right:1px solid #dde6f0; overflow-y:auto; padding:12px 0; }
@@ -4016,7 +4988,8 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
           <h4>🕐 Day View</h4>
           <ul>
             <li>Click any <strong>day number</strong> in the grid header to open the Day View for that day.</li>
-            <li>Shows each resource as a row with <strong>hour columns</strong> representing their shift — green = present, gradient = partial (PN/PTO), red = absent, grey = outside shift.</li>
+            <li>Shows each resource as a row with <strong>hour columns</strong> representing their shift — green = present, grey-blue gradient = partial (PN/PTO), red = absent, grey = outside shift.</li>
+            <li>A <strong>colour legend</strong> at the top of the Day View explains each block colour.</li>
             <li>The <strong>Coverage %</strong> row shows per-hour availability percentage, color-coded green → red.</li>
             <li>The <strong>Total Available</strong> row shows a headcount of available resources per hour.</li>
             <li><strong>Hover</strong> over an hour column to see a tooltip with coverage % and resource count.</li>
@@ -4039,11 +5012,14 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
         <div class="hm-section" id="hm-resources">
           <h4>👥 Manage Resources</h4>
           <ul>
-            <li>Click <strong>Manage Resources</strong> in the toolbar to open the management panel.</li>
-            <li>Click <strong>+ Add Resource</strong> to add a new team member — enter their name, assign a shift (preset or custom), set off days, and pick a location.</li>
+            <li>Click <strong>Manage Resources</strong> in the toolbar to open the fixed-size management panel with sticky tabs.</li>
+            <li>Click <strong>+ Add Resource</strong> to open a popout form — enter their name, assign a shift (preset or manual), set work days, and pick a location.</li>
+            <li>When a <strong>shift preset</strong> is selected, the work-day checkboxes are locked to match the shift's configured days. Switch to <strong>Manual entry</strong> to set work days freely.</li>
+            <li><strong>Work days</strong> are selected with toggle checkboxes — off days are derived automatically from whichever days are not selected.</li>
+            <li>The <strong>Preview TZ</strong> section shows how the shift times convert to any timezone, with a per-work-day conversion table including day offset labels (e.g. +1d, -1d).</li>
             <li>Click the <strong>✏️ icon</strong> to edit an existing resource. Renaming a resource automatically migrates all their stored cell data to the new name.</li>
             <li>Click the <strong>✕ icon</strong> to remove a resource.</li>
-            <li><strong>Off Days</strong> can be set as preset patterns (Mon–Fri, Tue–Sat, etc.) or a custom comma-separated list (e.g. <span class="hm-tag">Sat,Sun</span>).</li>
+            <li>Newly added or edited resources are <strong>highlighted and scrolled into view</strong> in the resource list after saving.</li>
             <li>Use <strong>checkboxes</strong> to select multiple resources, then click <strong>⋯</strong> to apply holidays to all checked resources at once.</li>
             <li>Auto-pull is paused while the modal is open to prevent data conflicts during editing. A pull runs automatically after each save.</li>
           </ul>
@@ -4053,10 +5029,14 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
           <h4>⏰ Shifts</h4>
           <ul>
             <li>Open <strong>Manage Resources → Shifts tab</strong> to create and manage shift configurations.</li>
-            <li>Each shift has a <strong>Label</strong> (e.g. "US Morning"), <strong>Start/End time</strong>, and an optional <strong>source timezone</strong> — times are converted to the view timezone automatically.</li>
-            <li>Assign a shift to a resource via the <strong>Shift Preset</strong> dropdown when adding or editing a resource.</li>
+            <li>Click <strong>+ Add Shift</strong> to open a popout form. Each shift has a <strong>Label</strong> (e.g. "US Morning"), <strong>Start/End time</strong>, optional <strong>source timezone</strong>, and <strong>work-day checkboxes</strong>.</li>
+            <li><strong>Work days</strong> are set with toggle checkboxes — off days are derived automatically. The shift carries its work-day pattern and applies it to any resource assigned to it.</li>
+            <li>The <strong>Preview TZ</strong> section in both Add and Edit Shift shows a per-work-day table of converted times in any chosen timezone, with day offset labels (e.g. +1d, -1d) when the shift crosses midnight.</li>
+            <li>Assign a shift to a resource via the <strong>Shift Preset</strong> dropdown when adding or editing a resource — this locks the resource's work days to the shift's pattern.</li>
             <li>Shift times appear in the main grid header and day view, converted to the selected view timezone.</li>
-            <li>Click ✏️ to edit a shift or ✕ to remove it.</li>
+            <li>Editing a shift automatically updates all resources assigned to it and re-stamps historical snapshots.</li>
+            <li>Newly added or edited shifts are <strong>highlighted and scrolled into view</strong> in the shift list after saving.</li>
+            <li>Click ✏️ to edit a shift or ✕ to remove it. Removing a shift unlinks any resources that referenced it.</li>
           </ul>
         </div>
 
@@ -4066,6 +5046,7 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
             <li>Open <strong>Manage Resources → Locations tab</strong> to add locations (e.g. "Manila", "US", "India").</li>
             <li>Each location can have its own <strong>holiday dates</strong> assigned to it.</li>
             <li>Resources are assigned a location when added or edited — this links them to that location's holidays.</li>
+            <li>Newly added locations are <strong>highlighted and scrolled into view</strong> in the list after saving.</li>
             <li>Remove a location with the ✕ button — this does not remove resources assigned to it.</li>
           </ul>
         </div>
@@ -4073,7 +5054,8 @@ document.getElementById('trendOverlay').addEventListener('click', function(e) {
         <div class="hm-section" id="hm-holidays">
           <h4>🚩 Holidays</h4>
           <ul>
-            <li>Open <strong>Manage Resources → Locations tab</strong> and add holiday dates to each location.</li>
+            <li>Open <strong>Manage Resources → Locations tab</strong> and add holiday dates to each location using the date picker and <strong>+ Add</strong> button, or use <strong>⬇ Auto-fill</strong> to fetch public holidays by country and year.</li>
+            <li>Newly added holiday tags are <strong>highlighted</strong> within their location card after saving.</li>
             <li>In the <strong>main grid</strong>, select resources using their checkboxes, then click the <strong>⋯ button</strong> and choose <strong>Apply holidays to checked</strong> — this fills <span class="hm-tag">HOL</span> on all holiday dates for each checked resource's location.</li>
             <li>Days with holidays for any location show a <strong>🚩 flag icon</strong> in the date header. Hover to see which locations observe the holiday.</li>
             <li>Holidays are per-location, so resources in different regions see only their relevant holidays applied.</li>
