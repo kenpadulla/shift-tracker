@@ -4126,7 +4126,12 @@ function clearMonthData() {
 }
 
 function clearAll() {
-  if (!confirm('Reset ALL data and resources? This cannot be undone.')) return;
+  const confirmed = prompt('This will permanently delete ALL data, resources, and shifts.\n\nType RESET to confirm:');
+  if (confirmed === null) return;
+  if (confirmed.trim() !== 'RESET') {
+    alert('Reset cancelled — you must type RESET exactly to proceed.');
+    return;
+  }
   localStorage.removeItem(LS_RESOURCES);
   localStorage.removeItem(LS_DATA);
   localStorage.removeItem(LS_SHIFT_CFGS);
