@@ -2975,6 +2975,7 @@ function wireHourHover() {
     const fill = document.getElementById('rsBarFill');
     fill.style.width = fillW + '%';
     fill.className = 'rs-bar-fill'; fill.style.background = fillColor;
+    updateResDots(lo, hi);
   }
 
   // Mouse events for drag-select
@@ -3167,6 +3168,7 @@ function wireHourHover() {
       const cell = e.target.closest('[data-hour]');
       if (cell && table.contains(cell)) {
         const h = Number(cell.dataset.hour);
+        updateResDots(h, h);
         showRangeTip(h, h, e.clientX, e.clientY);
       }
     }
@@ -3203,9 +3205,54 @@ function clearRangeHighlight() {
   table.querySelectorAll('[data-hour]').forEach(el => el.classList.remove('col-sel','col-sel-start','col-sel-end'));
 }
 
+function updateResDots(lo, hi) {
+  document.querySelectorAll('#dayModalBody [data-res-dot]').forEach(dot => {
+    const name = dot.dataset.resDot;
+    const d = _dayResData.find(r => r.res.name === name);
+    if (!d) return;
+    if (d.isOff || d.start === null) {
+      dot.style.background = '#bbb';
+      dot.title = 'Rest day / no shift';
+      return;
+    }
+    // Check if scheduled in range
+    let scheduled = false;
+    for (let h = lo; h <= hi; h++) { if (inShift(h, d.start, d.end)) { scheduled = true; break; } }
+    if (!scheduled) { dot.style.background = '#bbb'; dot.title = 'Outside shift'; return; }
+    // Check if available in range
+    let avail = false;
+    for (let h = lo; h <= hi; h++) {
+      if (!inShift(h, d.start, d.end)) continue;
+      if (d.statusClass === 'present') { avail = true; break; }
+      const mid = shiftMidHour(d.start, d.end);
+      const inSecond = inShift(h, mid, d.end);
+      if (['pn1','pto1'].includes(d.statusClass) && inSecond) { avail = true; break; }
+      if (['pn2','pto2'].includes(d.statusClass) && !inSecond) { avail = true; break; }
+    }
+    if (avail) {
+      dot.style.background = '#27ae60'; dot.title = 'Available';
+    } else {
+      dot.style.background = '#e74c3c'; dot.title = 'Unavailable (absent/leave)';
+    }
+  });
+}
+
+function resetResDots() {
+  document.querySelectorAll('#dayModalBody [data-res-dot]').forEach(dot => {
+    const name = dot.dataset.resDot;
+    const d = _dayResData.find(r => r.res.name === name);
+    if (!d) return;
+    if (d.isOff) { dot.style.background = '#bbb'; dot.title = 'Rest day'; return; }
+    if (d.statusClass === 'present') { dot.style.background = '#27ae60'; dot.title = 'Available'; }
+    else if (['pn1','pn2','pto1','pto2'].includes(d.statusClass)) { dot.style.background = '#f39c12'; dot.title = 'Partial'; }
+    else { dot.style.background = '#bbb'; dot.title = 'Unavailable'; }
+  });
+}
+
 function clearRangeSelection() {
   _rangeStart = _rangeEnd = null;
   clearRangeHighlight();
+  resetResDots();
   // Reset panel to idle state
   const rsTime = document.getElementById('rsTime');
   const rsPct  = document.getElementById('rsPct');
@@ -3287,8 +3334,12 @@ function buildDayView(day, dayName, covPct) {
 
   resData.forEach(d => {
     const dayViewShiftStr = formatShiftInViewTZ(d.res);
-    html += `<tr><td class="hg-res-name">${d.res.name}${dayViewShiftStr
-      ? `<br><span style="font-weight:normal;color:#777;font-size:10px">⏰ ${dayViewShiftStr}</span>`
+    // Default dot: green if available today (present), gray if off/absent
+    const defaultDotColor = (!d.isOff && d.statusClass === 'present') ? '#27ae60'
+      : (!d.isOff && ['pn1','pn2','pto1','pto2'].includes(d.statusClass)) ? '#f39c12'
+      : '#bbb';
+    html += `<tr><td class="hg-res-name"><span class="hg-res-dot" data-res-dot="${d.res.name}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${defaultDotColor};margin-right:5px;flex-shrink:0;vertical-align:middle"></span>${d.res.name}${dayViewShiftStr
+      ? `<br><span style="font-weight:normal;color:#777;font-size:10px;margin-left:14px">⏰ ${dayViewShiftStr}</span>`
       : ''}</td>`;
 
     hours.forEach(h => {
