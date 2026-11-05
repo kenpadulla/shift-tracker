@@ -4493,10 +4493,10 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
   }
 
   function isAvailableInRange(d) {
-    return hours.some(h => {
-      const bc = blockClass(d, h);
-      return bc === 'present' || bc === 'pn1' || bc === 'pn2' || bc === 'pto1' || bc === 'pto2';
-    });
+    if (d.isOff || d.start === null || d.end === null) return false;
+    // Must be currently in shift — no "starts in X" entries
+    if (!inShift(nowFrac, d.start, d.end)) return false;
+    return hours.some(h => blockClass(d, h) === 'present');
   }
 
   // Group by shift — only resources that overlap the range AND are available
