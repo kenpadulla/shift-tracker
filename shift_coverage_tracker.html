@@ -3011,7 +3011,7 @@ function wireHourHover() {
     const resEl = tooltip.querySelector('.ht-resources');
     // y = scheduled resources: work day, has a shift, shift overlaps the range
     const scheduled = _dayResData.filter(d => {
-      if (d.isOff || d.start === null || d.start === undefined) return false;
+      if (d.isOff || d.start === null || d.start === undefined || d.end === null || d.end === undefined) return false;
       for (let h = lo; h <= hi; h++) {
         if (inShift(h, d.start, d.end)) return true;
       }
@@ -3210,7 +3210,7 @@ function updateResDots(lo, hi) {
     const name = dot.dataset.resDot;
     const d = _dayResData.find(r => r.res.name === name);
     if (!d) return;
-    if (d.isOff || d.start === null) {
+    if (d.isOff || d.start === null || d.start === undefined || d.end === null || d.end === undefined) {
       dot.style.background = '#bbb';
       dot.title = 'Rest day / no shift';
       return;
@@ -5162,20 +5162,41 @@ function buildDailyView() {
   });
 
   // Build hourly data (0–23)
+  // Pre-compute previous day name for overnight shift tail check
+  const DAY_NAMES_JS2 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const prevDow = new Date(y, m - 1, day - 1).getDay();
+  const prevDayName = DAY_NAMES_JS2[prevDow];
+
   const hourItems = [];
   for (let h = 0; h < 24; h++) {
     let total = 0, working = 0;
     const availNames = [];
     resData.forEach(d => {
-      if (d.isOff) return;
-      total++;
+      if (d.start === null || d.start === undefined || d.end === null || d.end === undefined) return;
       if (!inShift(h, d.start, d.end)) return;
+      // For overnight tail hours (h < end < start), the shift started yesterday
+      const isOvernightTail = d.end < d.start && h < d.end;
+      const effectiveIsOff = isOvernightTail ? isOffDay(d.res, prevDayName) : d.isOff;
+      if (effectiveIsOff) return;
+      total++; // only count resources whose shift covers this hour
+      // For overnight tail, availability depends on yesterday's status
+      let effectiveStatusClass = d.statusClass;
+      if (isOvernightTail && day > 1) {
+        const prevStatus = getCellForMonth(ym, day - 1, d.res.name, 'status').trim().toUpperCase();
+        if (prevStatus === '')          effectiveStatusClass = 'present';
+        else if (prevStatus === 'PN1')  effectiveStatusClass = 'pn1';
+        else if (prevStatus === 'PN2')  effectiveStatusClass = 'pn2';
+        else if (prevStatus === 'PTO1') effectiveStatusClass = 'pto1';
+        else if (prevStatus === 'PTO2') effectiveStatusClass = 'pto2';
+        else if (prevStatus === 'HOL')  effectiveStatusClass = 'hol';
+        else                            effectiveStatusClass = 'absent';
+      }
       const mid = shiftMidHour(d.start, d.end);
       const inSecond = inShift(h, mid, d.end);
       let contrib = 0;
-      if (d.statusClass === 'present') contrib = 1;
-      else if (['pn1','pto1'].includes(d.statusClass)) contrib = inSecond ? 1 : 0;
-      else if (['pn2','pto2'].includes(d.statusClass)) contrib = inSecond ? 0 : 1;
+      if (effectiveStatusClass === 'present') contrib = 1;
+      else if (['pn1','pto1'].includes(effectiveStatusClass)) contrib = inSecond ? 1 : 0;
+      else if (['pn2','pto2'].includes(effectiveStatusClass)) contrib = inSecond ? 0 : 1;
       working += contrib;
       if (contrib > 0) availNames.push(d.res.name);
     });
