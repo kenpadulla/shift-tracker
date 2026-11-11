@@ -2752,11 +2752,18 @@ function applyStatusStyle(td, val) {
   else td.classList.add('status-leave');
 }
 
+let _cellSaveTimer = null;
 function onCellInput(e) {
   const inp = e.target;
   if (inp.dataset.field === 'status') {
     applyStatusStyle(inp.parentElement, inp.value);
   }
+  // Debounced save so a refresh mid-type still captures the latest value
+  clearTimeout(_cellSaveTimer);
+  _cellSaveTimer = setTimeout(() => {
+    setCell(inp.dataset.day, inp.dataset.res, inp.dataset.field, inp.value.trim());
+    refreshCoverageCell(Number(inp.dataset.day));
+  }, 400);
 }
 
 function onCellChange(e) {
@@ -2878,13 +2885,24 @@ function wireHourHover() {
   }
 
   function fmtTimeLeft(d, fromH) {
-    if (d.end === null || d.end === undefined) return { text: '', color: '' };
-    const isOvernight = d.end < d.start;
+    if (d.end === null || d.end === undefined || d.start === null) return { text: '', color: '' };
     let minsLeft;
-    if (isOvernight && d.end <= fromH) {
-      minsLeft = Math.round((d.end + 24 - fromH) * 60);
+    if (['pn2','pto2'].includes(d.statusClass)) {
+      // Available 1st half only — time left to midpoint
+      const mid = shiftMidHour(d.start, d.end);
+      minsLeft = Math.round((mid - fromH) * 60);
+    } else if (['pn1','pto1'].includes(d.statusClass)) {
+      // Available 2nd half only — time left to shift end
+      const rem = d.end > fromH ? d.end - fromH
+        : d.end < d.start ? d.end + 24 - fromH : 0;
+      minsLeft = Math.round(rem * 60);
     } else {
-      minsLeft = Math.round((d.end - fromH) * 60);
+      // Present — time left to shift end (handle overnight)
+      const isOvernight = d.end < d.start;
+      const rem = isOvernight && d.end <= fromH
+        ? d.end + 24 - fromH
+        : d.end - fromH;
+      minsLeft = Math.round(rem * 60);
     }
     if (minsLeft <= 0) return { text: '', color: '' };
     const hh = Math.floor(minsLeft / 60), mm = minsLeft % 60;
@@ -3055,12 +3073,19 @@ function wireHourHover() {
       // Reference point: whichever is later — range start or shift start
       const getRef = d => (d.start !== null && d.start > lo) ? d.start : lo;
       const getMins = d => {
-        if (d.end === null || d.end === undefined) return -1;
+        if (d.end === null || d.end === undefined || d.start === null) return -1;
         const ref = getRef(d);
-        const isOvernight = d.end < d.start;
-        const mins = isOvernight && d.end <= ref
-          ? Math.round((d.end + 24 - ref) * 60)
-          : Math.round((d.end - ref) * 60);
+        let mins;
+        if (['pn2','pto2'].includes(d.statusClass)) {
+          mins = Math.round((shiftMidHour(d.start, d.end) - ref) * 60);
+        } else if (['pn1','pto1'].includes(d.statusClass)) {
+          const rem = d.end > ref ? d.end - ref : d.end < d.start ? d.end + 24 - ref : 0;
+          mins = Math.round(rem * 60);
+        } else {
+          const isOvernight = d.end < d.start;
+          const rem = isOvernight && d.end <= ref ? d.end + 24 - ref : d.end - ref;
+          mins = Math.round(rem * 60);
+        }
         return mins > 0 ? mins : -1;
       };
       // Group by shift start time, sort groups by start asc, within group sort by time left desc
@@ -4305,12 +4330,15 @@ function renderLiveBar() {
   }
 
   function calcRemSecs(d) {
-    if (d.end === null) return null;
-    const isOvernight = d.end <= d.start;
-    if (isOvernight && d.end <= nowFrac) {
-      return Math.round((d.end + 24 - nowFrac) * 3600);
+    if (d.end === null || d.start === null) return null;
+    const isOvernightShift = d.end < d.start;
+    function secsTo(target) {
+      let diff = target - nowFrac;
+      if (diff <= 0 && isOvernightShift && target <= d.start) diff += 24;
+      return diff > 0 ? Math.round(diff * 3600) : 0;
     }
-    return Math.round((d.end - nowFrac) * 3600);
+    if (['pn2','pto2'].includes(d.statusClass)) return secsTo(shiftMidHour(d.start, d.end));
+    return secsTo(d.end);
   }
 
   function calcStartSecs(d) {
@@ -4366,7 +4394,7 @@ function renderLiveBar() {
     const pctTxt = pct === null ? '—' : pct + '%';
     const fillW  = pct ?? 0;
     const namesTxt = names.length ? names.join(', ') : 'None available';
-    return `<div class="live-box" id="${boxId}" style="cursor:pointer" onclick="openLiveDetail(${hStart},${hEnd},'${label}','${timeStr}')">
+    return `<div class="live-box" id="${boxId}" style="cursor:pointer" data-hstart="${hStart}" data-hend="${hEnd}" data-label="${label.replace(/"/g,'&quot;')}" data-timestr="${timeStr.replace(/"/g,'&quot;')}">
       <div class="lb-label">${label}</div>
       <div class="lb-time">${timeStr}</div>
       <div class="lb-pct" style="color:${color}">${pctTxt}</div>
@@ -4400,6 +4428,18 @@ function renderLiveBar() {
   html += makeBox('Next 4 hours', next4TimeStr, next4Avg, next4Names, next4Start, next4End, 'liveBox2');
 
   bar.innerHTML = html;
+
+  // Wire clicks via data attributes (avoids inline string escaping issues)
+  bar.querySelectorAll('.live-box').forEach(box => {
+    box.addEventListener('click', () => {
+      openLiveDetail(
+        Number(box.dataset.hstart),
+        Number(box.dataset.hend),
+        box.dataset.label,
+        box.dataset.timestr
+      );
+    });
+  });
 }
 
 // Per-second tick between minute changes — coverage/names are stable within a minute,
@@ -4449,22 +4489,33 @@ function openLiveDetail(hStart, hEnd, label, timeStr) {
     return '#27ae60';                      // >1 hr  — green
   }
 
+  function calcRemSecsLocal(d) {
+    if (d.end === null || d.start === null) return null;
+    const isOvernightShift = d.end < d.start;
+    // Helper: seconds from nowFrac to a target hour, wrapping +24 if target is "past midnight"
+    function secsTo(target) {
+      let diff = target - nowFrac;
+      // Only wrap if shift is overnight AND target is a next-day hour (target < d.start)
+      if (diff <= 0 && isOvernightShift && target <= d.start) diff += 24;
+      return diff > 0 ? Math.round(diff * 3600) : 0;
+    }
+    if (['pn2','pto2'].includes(d.statusClass)) {
+      return secsTo(shiftMidHour(d.start, d.end));
+    }
+    if (['pn1','pto1'].includes(d.statusClass)) {
+      return secsTo(d.end);
+    }
+    return secsTo(d.end);
+  }
+
   function resTimeTag(d) {
     if (d.start === null || d.end === null) return { text: '', color: '' };
 
-    const isOvernight = d.end <= d.start; // shift crosses midnight in view TZ
-    const inShiftNow  = inShift(nowFrac, d.start, d.end);
+    const inShiftNow = inShift(nowFrac, d.start, d.end);
 
     if (inShiftNow) {
-      // Resource is currently on shift — show time remaining until shift end
-      let remSecs;
-      if (isOvernight && d.end <= nowFrac) {
-        // Past midnight: end is early morning, nowFrac is late night — end is "tomorrow"
-        remSecs = Math.round((d.end + 24 - nowFrac) * 3600);
-      } else {
-        remSecs = Math.round((d.end - nowFrac) * 3600);
-      }
-      if (remSecs <= 0) return { text: '', color: '' };
+      const remSecs = calcRemSecsLocal(d);
+      if (!remSecs || remSecs <= 0) return { text: '', color: '' };
       return { text: fmtRemaining(remSecs), color: remainingColor(remSecs) };
     } else {
       // Resource is not yet on shift — show time until shift start
@@ -4595,6 +4646,15 @@ function stopLiveBar() { clearInterval(_liveBarTimer); }
   renderChips();
   renderGrid();
   startLiveBar(); // startLiveBar calls renderLiveBar + updateHeaderClock internally
+
+  // Flush any pending cell edits before the page unloads
+  window.addEventListener('beforeunload', () => {
+    const active = document.activeElement;
+    if (active && active.dataset && active.dataset.day && active.dataset.res && active.dataset.field) {
+      clearTimeout(_cellSaveTimer);
+      setCell(active.dataset.day, active.dataset.res, active.dataset.field, active.value.trim());
+    }
+  });
   // Restore auto-pull if it was enabled
   if (localStorage.getItem(LS_AUTO_PULL) === '1' && localStorage.getItem(LS_SYNC_URL)) {
     const secs = parseInt(localStorage.getItem(LS_AUTO_INTERVAL) || '60') * 1000;
