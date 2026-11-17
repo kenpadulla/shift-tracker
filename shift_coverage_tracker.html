@@ -1702,8 +1702,8 @@ function computeHourCoverage(h, resData) {
   let total = 0, working = 0;
   resData.forEach(d => {
     if (d.isOff) return;
-    total++;
     if (!inShift(h, d.start, d.end)) return;
+    total++;
     const mid = shiftMidHour(d.start, d.end);
     const inSecond = inShift(h, mid, d.end);
     if (d.statusClass === 'present') working += 1;
