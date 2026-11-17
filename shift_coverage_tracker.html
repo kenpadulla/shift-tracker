@@ -638,7 +638,10 @@ tbody tr:active td { background: #c8daf5 !important; }
       <div id="mmTab-shifts" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <span style="font-size:13px;font-weight:700;color:#1a3c5e">Shift Configurations</span>
-          <button class="btn-success" onclick="showAddShiftModal()">+ Add Shift</button>
+          <div style="display:flex;gap:6px">
+            <button class="btn-primary" onclick="openShiftCoverage()" style="font-size:12px;padding:5px 11px">📊 View Coverage</button>
+            <button class="btn-success" onclick="showAddShiftModal()">+ Add Shift</button>
+          </div>
         </div>
         <!-- Preview TZ above list -->
         <div style="display:flex;align-items:center;gap:8px;background:#f4f7fc;border:1px solid #c5cfe0;border-radius:6px;padding:7px 10px;margin-bottom:12px;max-width:360px">
@@ -2213,6 +2216,7 @@ function saveEditShiftConfig() {
   renderResourcePanel();
   renderGrid();
   if (_openDayNum !== null) openDayModal(_openDayNum);
+  if (document.getElementById('shiftCovOverlay').classList.contains('open')) renderShiftCovBody();
   setTimeout(() => {
     const list = document.getElementById('shiftConfigList');
     if (!list) return;
@@ -3714,6 +3718,7 @@ function saveEditResource() {
   renderChips();
   scheduleRender();
   if (_openDayNum !== null) openDayModal(_openDayNum);
+  if (document.getElementById('shiftCovOverlay').classList.contains('open')) renderShiftCovBody();
   setTimeout(() => {
     const tbody = document.getElementById('resourceListBody');
     if (!tbody) return;
@@ -5722,7 +5727,240 @@ function hmScroll(id) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// ── Shift Coverage Popout (all shifts) ───────────────────────────
+function openShiftCoverage() {
+  if (shiftConfigs.length === 0) {
+    alert('No shift configurations defined yet.');
+    return;
+  }
+
+  // Populate the popout's own TZ dropdown on first open
+  const scmTZSel = document.getElementById('scmTZ');
+  if (scmTZSel && scmTZSel.options.length === 0) {
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = `— View TZ (${tzLabel(selectedTZ)}) —`;
+    scmTZSel.appendChild(opt0);
+    COMMON_TZS.filter(t => t !== 'Local (browser)').forEach(tz => {
+      const opt = document.createElement('option');
+      opt.value = tz;
+      opt.textContent = tzLabel(tz);
+      scmTZSel.appendChild(opt);
+    });
+  }
+
+  document.getElementById('shiftCovOverlay').classList.add('open');
+  renderShiftCovBody();
+}
+
+function renderShiftCovBody() {
+  const scmTZSel  = document.getElementById('scmTZ');
+  const previewTZ = scmTZSel ? scmTZSel.value : '';
+  const savedTZ   = selectedTZ;
+  if (previewTZ) selectedTZ = previewTZ;
+
+  const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today     = nowInTZ();
+  const DAY_IDX   = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const todayDayIdx = DAY_IDX[today.dayName] ?? 0;
+
+  const weekDates = DAY_SHORT.map((dayName, i) => {
+    const offset = i - todayDayIdx;
+    const d = new Date(today.year, today.month - 1, today.date + offset);
+    return {
+      dayName,
+      label:   `${d.getMonth() + 1}/${d.getDate()}`,
+      isToday: d.getDate() === today.date && d.getMonth() + 1 === today.month && d.getFullYear() === today.year,
+    };
+  });
+
+  const DAY_ORDER = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+  const sorted = [...shiftConfigs].sort((a, b) => {
+    const wdA = a.workDays || offPresetToWorkDays(a.offPreset || 'satsun', a.offCustom || '');
+    const wdB = b.workDays || offPresetToWorkDays(b.offPreset || 'satsun', b.offCustom || '');
+    const firstA = wdA.length ? Math.min(...wdA.map(d => DAY_ORDER[d] ?? 7)) : 7;
+    const firstB = wdB.length ? Math.min(...wdB.map(d => DAY_ORDER[d] ?? 7)) : 7;
+    if (firstA !== firstB) return firstA - firstB;
+    const timeA = parseTime(a.start) ?? 99;
+    const timeB = parseTime(b.start) ?? 99;
+    if (timeA !== timeB) return timeA - timeB;
+    return a.label.localeCompare(b.label);
+  });
+
+  // Pre-compute footer data: total unique resources per day + covered hours per day
+  const footerData = weekDates.map(() => ({ resSet: new Set(), covHours: new Set() }));
+  sorted.forEach(cfg => {
+    const workDays   = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+    const shiftRes   = resources.filter(r => r.shiftLabel === cfg.label);
+    const srcS = parseTime(cfg.start), srcE = parseTime(cfg.end);
+    const cS   = cfg.tz ? convertShiftHour(srcS, cfg.tz) : srcS;
+    const cE   = cfg.tz ? convertShiftHour(srcE, cfg.tz) : srcE;
+    weekDates.forEach((wd, wi) => {
+      const dayKey = wd.dayName.toLowerCase().slice(0, 3);
+      if (!workDays.includes(dayKey)) return;
+      shiftRes.forEach(r => {
+        if (isOffDay(r, wd.dayName)) return;
+        footerData[wi].resSet.add(r.name);
+        if (cS !== null && cE !== null) {
+          for (let h = 0; h < 24; h++) {
+            if (inShift(h, cS, cE)) footerData[wi].covHours.add(h);
+          }
+        }
+      });
+    });
+  });
+
+  function hoursToRanges(covSet) {
+    if (covSet.size === 24) return '<span style="color:#27ae60;font-weight:700">Full coverage</span>';
+    const gaps = [];
+    for (let h = 0; h < 24; h++) { if (!covSet.has(h)) gaps.push(h); }
+    if (!gaps.length) return '<span style="color:#27ae60;font-weight:700">Full coverage</span>';
+    const ranges = [];
+    let s = gaps[0], p = gaps[0];
+    for (let i = 1; i <= gaps.length; i++) {
+      if (i < gaps.length && gaps[i] === p + 1) { p = gaps[i]; continue; }
+      ranges.push(`${String(s).padStart(2,'0')}:00–${p === 23 ? '00:00+1' : String(p+1).padStart(2,'0')+':00'}`);
+      if (i < gaps.length) { s = gaps[i]; p = gaps[i]; }
+    }
+    return `<span style="color:#e74c3c;font-size:11px">${ranges.join(', ')}</span>`;
+  }
+
+  let html = `<div style="overflow-x:auto"><table class="scm-table"><thead><tr>
+    <th class="scm-res-col" style="min-width:180px">Shift</th>
+    <th class="scm-res-col" style="min-width:220px">Resources</th>`;
+  weekDates.forEach(wd => {
+    html += `<th style="${wd.isToday ? 'background:#e8f4fd;color:#1a6fa8;' : ''}">${wd.dayName}<br><span style="font-weight:400;font-size:10px">${wd.label}</span></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  sorted.forEach(cfg => {
+    const workDays     = cfg.workDays || offPresetToWorkDays(cfg.offPreset || 'satsun', cfg.offCustom || '');
+    const shiftRes     = resources.filter(r => r.shiftLabel === cfg.label);
+    const cfgNative    = `${cfg.start}–${cfg.end}`;
+    const cfgConverted = formatShiftInViewTZ({ shiftStart: cfg.start, shiftEnd: cfg.end, tz: cfg.tz });
+    const timeStr      = cfgConverted && cfgConverted !== cfgNative ? cfgConverted : cfgNative;
+
+    const srcStartH  = parseTime(cfg.start);
+    const srcEndH    = parseTime(cfg.end);
+    const convStartH = cfg.tz ? convertShiftHour(srcStartH, cfg.tz) : srcStartH;
+    const convEndH   = cfg.tz ? convertShiftHour(srcEndH,   cfg.tz) : srcEndH;
+    const blockStart = convStartH !== null ? fmtHour(convStartH) : cfg.start;
+    const blockEnd   = convEndH   !== null ? fmtHour(convEndH)   : cfg.end;
+
+    const totalRes = shiftRes.length;
+    const resChips = totalRes
+      ? shiftRes.map(r => {
+          const ri = resources.findIndex(x => x.name === r.name);
+          return `<span onclick="openEditModal(${ri})" title="Edit ${r.name}" style="display:inline-flex;align-items:center;gap:3px;background:#eaf1fb;border:1px solid #c5d8f0;border-radius:12px;padding:2px 9px;font-size:11px;font-weight:600;color:#1a3c5e;cursor:pointer;white-space:nowrap;margin:2px 2px">${r.name}<span style="font-size:9px;opacity:.6">✏️</span></span>`;
+        }).join('')
+      : '<span style="color:#aaa;font-style:italic">None assigned</span>';
+
+    const cfgIdx = shiftConfigs.findIndex(c => c === cfg);
+    html += `<tr>
+      <td class="scm-res-cell" onclick="editShiftConfig(${cfgIdx})" title="Click to edit this shift" style="cursor:pointer">
+        <span style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+          <strong>${cfg.label}</strong>
+          <span style="font-size:10px;color:#2980b9;opacity:.8">✏️</span>
+        </span>
+        <span style="font-weight:400;font-size:10px;color:#777">⏰ ${timeStr}</span><br>
+        <span style="font-weight:400;font-size:10px;color:#2980b9">${totalRes} resource${totalRes !== 1 ? 's' : ''}</span>
+      </td>
+      <td style="vertical-align:middle;padding:6px 10px;line-height:1.8">${resChips}</td>`;
+
+    weekDates.forEach(wd => {
+      const dayKey    = wd.dayName.toLowerCase().slice(0, 3);
+      const isWorkDay = workDays.includes(dayKey);
+      const todayBg   = wd.isToday ? '#fffde7' : '';
+      if (isWorkDay) {
+        const dayCount = shiftRes.filter(r => !isOffDay(r, wd.dayName)).length;
+        const hasRes   = dayCount > 0;
+        const blockBg  = hasRes ? '#d5f5e3' : '#f0f0f0';
+        const blockBdr = hasRes ? '#27ae60' : '#bbb';
+        const blockClr = hasRes ? '#1e8449' : '#999';
+        const countClr = hasRes ? '#1e8449' : '#aaa';
+        html += `<td style="${todayBg ? 'background:' + todayBg + ';' : ''}text-align:center;vertical-align:middle">
+          <div style="background:${blockBg};border-left:3px solid ${blockBdr};border-radius:4px;padding:5px 10px;font-size:12px;font-weight:700;color:${blockClr};white-space:nowrap">${blockStart}<br>${blockEnd}</div>
+          <div style="font-size:11px;font-weight:700;color:${countClr};margin-top:4px">${dayCount} resource${dayCount !== 1 ? 's' : ''}</div>
+        </td>`;
+      } else {
+        html += `<td style="${todayBg ? 'background:' + todayBg + ';' : 'background:#f7f7f7;'}text-align:center;vertical-align:middle">
+          <span style="color:#ddd;font-size:13px">—</span>
+        </td>`;
+      }
+    });
+
+    html += `</tr>`;
+  });
+
+  // Footer row 1: total unique resources per day
+  html += `<tr class="scm-cov-row">
+    <td class="scm-res-cell" colspan="2" style="font-weight:700;color:#1a3c5e">Total Resources / Day</td>`;
+  weekDates.forEach((wd, wi) => {
+    const count   = footerData[wi].resSet.size;
+    const todayBg = wd.isToday ? 'background:#fffde7;' : '';
+    html += `<td style="${todayBg}text-align:center;font-weight:700;font-size:13px;color:${count > 0 ? '#1a3c5e' : '#bbb'}">${count > 0 ? count : '—'}</td>`;
+  });
+  html += `</tr>`;
+
+  // Footer row 2: uncovered hours per day
+  html += `<tr class="scm-cov-row">
+    <td class="scm-res-cell" colspan="2" style="font-weight:700;color:#c0392b">Uncovered Hours</td>`;
+  weekDates.forEach((wd, wi) => {
+    const { resSet, covHours } = footerData[wi];
+    const todayBg = wd.isToday ? 'background:#fffde7;' : '';
+    const content = resSet.size === 0
+      ? '<span style="color:#bbb">—</span>'
+      : hoursToRanges(covHours);
+    html += `<td style="${todayBg}text-align:center;vertical-align:middle;font-size:11px;padding:6px 4px">${content}</td>`;
+  });
+  html += `</tr>`;
+
+  html += `</tbody></table></div>`;
+
+  document.getElementById('scmBody').innerHTML = html;
+  selectedTZ = savedTZ;
+}
+
+function closeShiftCoverage() {
+  document.getElementById('shiftCovOverlay').classList.remove('open');
+}
 </script>
+
+<style>
+#shiftCovOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9500; align-items:center; justify-content:center; }
+#editShiftModal { z-index:9600; }
+#editModal { z-index:9600; }
+#shiftCovOverlay.open { display:flex; }
+#shiftCovModal { background:#fff; border-radius:10px; width:95vw; max-width:1200px; max-height:92vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+.scm-header { background:#1a3c5e; color:#fff; padding:12px 18px; border-radius:10px 10px 0 0; display:flex; align-items:center; gap:10px; }
+.scm-header h3 { margin:0; font-size:15px; font-weight:700; white-space:nowrap; }
+#scmTZ { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.3); border-radius:4px; font-size:11px; padding:4px 8px; min-width:150px; cursor:pointer; }
+#scmTZ option { background:#1a3c5e; color:#fff; }
+.scm-body { padding:20px 24px 28px; }
+.scm-table { width:100%; border-collapse:collapse; font-size:13px; }
+.scm-table th { background:#f0f4fa; color:#1a3c5e; font-weight:700; text-align:center; padding:10px 10px; border:1px solid #dde6f0; font-size:12px; }
+.scm-table th.scm-res-col { text-align:left; min-width:160px; }
+.scm-table td { text-align:center; padding:8px 8px; border:1px solid #f0f0f0; vertical-align:middle; }
+.scm-table td.scm-res-cell { text-align:left; font-weight:600; color:#1a3c5e; padding-left:14px; white-space:nowrap; border-right:1px solid #dde6f0; font-size:13px; }
+.scm-table tr.scm-cov-row td { font-weight:700; font-size:13px; border-top:2px solid #ccd6e0; background:#f8f9fb; }
+.scm-table tr.scm-cov-row td.scm-res-cell { background:#f0f4fa; }
+.scm-badge { display:inline-block; padding:2px 7px; border-radius:3px; font-size:10px; font-weight:700; white-space:nowrap; }
+</style>
+
+<div class="modal-overlay" id="shiftCovOverlay" onclick="if(event.target===this)closeShiftCoverage()">
+  <div id="shiftCovModal">
+    <div class="scm-header">
+      <h3 id="scmTitle">Shift Coverage</h3>
+      <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;margin-right:14px">
+        <label style="font-size:11px;white-space:nowrap;opacity:.85">Preview TZ:</label>
+        <select id="scmTZ" onchange="renderShiftCovBody()" style="font-size:11px;padding:3px 7px;border-radius:4px;border:none;background:rgba(255,255,255,.15);color:#fff;min-width:140px;cursor:pointer"></select>
+      </div>
+      <button onclick="closeShiftCoverage()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div class="scm-body" id="scmBody"></div>
+  </div>
+</div>
 
 <div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:6px 0;font-size:11px;color:#aab;background:#f5f7fa;border-top:1px solid #e0e6ef;z-index:999">
   Built by <strong style="color:#1a3c5e">Ken Padulla</strong> &nbsp;·&nbsp; CloudOps Team &nbsp;·&nbsp; 2026
